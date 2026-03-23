@@ -36,13 +36,16 @@ export function SyncStatusScreen() {
       <div className="flex-1 p-4">
         <h1 className="mb-3 text-lg font-bold text-gray-800">{t('syncStatusTitle')}</h1>
 
-        <input
-          type="text"
-          placeholder={t('farmId')}
+        <select
           value={farmFilter}
           onChange={(e) => setFarmFilter(e.target.value)}
-          className="mb-4 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
+          className="mb-4 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="">{t('selectFarm')} — All</option>
+          <option value="bang-pla-farm">Bang Pla Farm</option>
+          <option value="chanthaburi-farm">Chanthaburi Farm</option>
+          <option value="surat-thani-farm">Surat Thani Farm</option>
+        </select>
 
         <div className="mb-4 flex gap-2">
           <button

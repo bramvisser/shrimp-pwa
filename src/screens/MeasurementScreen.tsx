@@ -10,9 +10,8 @@ export function MeasurementScreen() {
   const { t } = useTranslation();
   const { name: operatorName } = useOperator();
 
-  const [farmId, setFarmId] = useState('demo-farm');
+  const [farmId, setFarmId] = useState('bang-pla-farm');
   const [tankId, setTankId] = useState('');
-  const [cohortId, setCohortId] = useState('');
   const [rfidTag, setRfidTag] = useState('');
   const [barcode, setBarcode] = useState('');
   const [animalId, setAnimalId] = useState('');
@@ -46,7 +45,6 @@ export function MeasurementScreen() {
         id: crypto.randomUUID(),
         farmId: farmId.trim(),
         tankId: tankId.trim() || undefined,
-        cohortId: cohortId.trim() || undefined,
         rfidTag: rfidTag.trim() || undefined,
         barcode: barcode.trim() || undefined,
         animalId: animalId.trim() || undefined,
@@ -73,9 +71,20 @@ export function MeasurementScreen() {
       <form onSubmit={handleSave} className="flex-1 space-y-3 p-4">
         <h1 className="mb-2 text-lg font-bold text-gray-800">{t('weightScreenTitle')}</h1>
 
-        <Field label={t('farmId')} value={farmId} onChange={setFarmId} error={errors.farmId} />
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">{t('farmId')}</label>
+          <select
+            value={farmId}
+            onChange={(e) => setFarmId(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="bang-pla-farm">Bang Pla Farm</option>
+            <option value="chanthaburi-farm">Chanthaburi Farm</option>
+            <option value="surat-thani-farm">Surat Thani Farm</option>
+          </select>
+          {errors.farmId && <p className="mt-1 text-sm text-red-500">{errors.farmId}</p>}
+        </div>
         <Field label={t('tankId')} value={tankId} onChange={setTankId} />
-        <Field label={t('cohortId')} value={cohortId} onChange={setCohortId} />
         <Field label={t('rfidTag')} value={rfidTag} onChange={setRfidTag} />
 
         <div>

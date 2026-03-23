@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { AppTopBar } from '../components/AppTopBar';
+import { useFarms } from '../hooks/useFarms';
 import { useSyncStatus } from '../sync/useSyncStatus';
 import { useOnlineStatus } from '../sync/useOnlineStatus';
 import { syncAll, retryFailed } from '../sync/syncEngine';
@@ -9,6 +10,7 @@ import type { Measurement, Mortality } from '../db/database';
 
 export function SyncStatusScreen() {
   const { t } = useTranslation();
+  const farms = useFarms();
   const [farmFilter, setFarmFilter] = useState('');
   const [syncing, setSyncing] = useState(false);
   const isOnline = useOnlineStatus();
@@ -42,9 +44,9 @@ export function SyncStatusScreen() {
           className="mb-4 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="">{t('selectFarm')} — All</option>
-          <option value="bang-pla-farm">Bang Pla Farm</option>
-          <option value="chanthaburi-farm">Chanthaburi Farm</option>
-          <option value="surat-thani-farm">Surat Thani Farm</option>
+          {farms.map((farm) => (
+            <option key={farm.id} value={farm.slug}>{farm.name}</option>
+          ))}
         </select>
 
         <div className="mb-4 flex gap-2">

@@ -5,12 +5,14 @@ import { AppTopBar } from '../components/AppTopBar';
 import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
 import { db } from '../db/database';
 import { useOperator } from '../hooks/useOperator';
+import { useFarms } from '../hooks/useFarms';
 
 export function MeasurementScreen() {
   const { t } = useTranslation();
   const { name: operatorName } = useOperator();
 
-  const [farmId, setFarmId] = useState('bang-pla-farm');
+  const farms = useFarms();
+  const [farmId, setFarmId] = useState('');
   const [tankId, setTankId] = useState('');
   const [rfidTag, setRfidTag] = useState('');
   const [barcode, setBarcode] = useState('');
@@ -78,9 +80,10 @@ export function MeasurementScreen() {
             onChange={(e) => setFarmId(e.target.value)}
             className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
-            <option value="bang-pla-farm">Bang Pla Farm</option>
-            <option value="chanthaburi-farm">Chanthaburi Farm</option>
-            <option value="surat-thani-farm">Surat Thani Farm</option>
+            <option value="">{t('selectFarm')}</option>
+            {farms.map((farm) => (
+              <option key={farm.id} value={farm.slug}>{farm.name}</option>
+            ))}
           </select>
           {errors.farmId && <p className="mt-1 text-sm text-red-500">{errors.farmId}</p>}
         </div>

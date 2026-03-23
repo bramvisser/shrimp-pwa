@@ -3,6 +3,13 @@ import Dexie, { type Table } from 'dexie';
 export type SyncStatus = 'pending' | 'synced' | 'failed';
 export type MortalityCause = 'unknown' | 'disease' | 'handling' | 'water' | 'other';
 
+export interface Farm {
+  id: string;
+  name: string;
+  slug: string;
+  location?: string;
+}
+
 export interface Measurement {
   id: string;
   farmId: string;
@@ -38,12 +45,18 @@ export interface Mortality {
 }
 
 class ShrimpDatabase extends Dexie {
+  farms!: Table<Farm, string>;
   measurements!: Table<Measurement, string>;
   mortalities!: Table<Mortality, string>;
 
   constructor() {
     super('ShrimpPWA');
     this.version(1).stores({
+      measurements: 'id, farmId, syncStatus, createdAt',
+      mortalities: 'id, farmId, syncStatus, createdAt',
+    });
+    this.version(2).stores({
+      farms: 'id, slug',
       measurements: 'id, farmId, syncStatus, createdAt',
       mortalities: 'id, farmId, syncStatus, createdAt',
     });

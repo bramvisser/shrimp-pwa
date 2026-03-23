@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shrimp App — Printable QR Codes</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #fff;
+    }
+    h1 { font-size: 18px; margin-bottom: 4px; }
+    p.sub { font-size: 12px; color: #888; margin-top: 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 720px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      break-inside: avoid;
+    }
+    .card img { width: 150px; height: 150px; }
+    .card .id {
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: monospace;
+      letter-spacing: 0.5px;
+    }
+    .card .label {
+      font-size: 11px;
+      color: #999;
+      margin-top: 2px;
+    }
+    @media print {
+      body { padding: 10px; }
+      .no-print { display: none; }
+      .grid { gap: 12px; }
+      .card { border: 1px solid #ccc; padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Shrimp App — QR Codes</h1>
+  <p class="sub">Print this page and scan with the barcode scanner in the app.</p>
+  <p class="no-print" style="margin-bottom:16px">
+    <button onclick="window.print()" style="padding:8px 16px;font-size:14px;cursor:pointer;border-radius:6px;border:1px solid #ccc">
+      Print this page
+    </button>
+  </p>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const ids = [
+      { id: 'SHR-0001', label: 'Animal ID' },
+      { id: 'SHR-0002', label: 'Animal ID' },
+      { id: 'SHR-0003', label: 'Animal ID' },
+      { id: 'SHR-0004', label: 'Animal ID' },
+      { id: 'SHR-0005', label: 'Animal ID' },
+      { id: 'SHR-0006', label: 'Animal ID' },
+      { id: 'TNK-A1', label: 'Tank ID' },
+      { id: 'TNK-A2', label: 'Tank ID' },
+      { id: 'TNK-B1', label: 'Tank ID' },
+      { id: 'TAG-900001', label: 'RFID Tag' },
+      { id: 'TAG-900002', label: 'RFID Tag' },
+      { id: 'TAG-900003', label: 'RFID Tag' },
+    ];
+
+    const grid = document.getElementById('grid');
+
+    ids.forEach(({ id, label }) => {
+      const qr = qrcode(0, 'M');
+      qr.addData(id);
+      qr.make();
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        ${qr.createImgTag(4, 8)}
+        <div class="id">${id}</div>
+        <div class="label">${label}</div>
+      `;
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>

@@ -82,5 +82,6 @@
   "causeDisease": "โรค",
   "causeHandling": "การจับถือ",
   "causeWaterQuality": "คุณภาพน้ำ",
-  "causeOther": "อื่น ๆ"
+  "causeOther": "อื่น ๆ",
+  "takePhoto": "ถ่ายรูป"
 }

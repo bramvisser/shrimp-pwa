@@ -82,5 +82,6 @@
   "causeDisease": "Enfermedad",
   "causeHandling": "Manipulación",
   "causeWaterQuality": "Calidad del agua",
-  "causeOther": "Otro"
+  "causeOther": "Otro",
+  "takePhoto": "Tomar foto"
 }

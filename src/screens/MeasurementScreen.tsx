@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
 import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
+import { BluetoothScaleIndicator } from '../components/BluetoothScaleIndicator';
 import { db } from '../db/database';
 import { useOperator } from '../hooks/useOperator';
 import { useFarms } from '../hooks/useFarms';
@@ -22,6 +23,9 @@ export function MeasurementScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<{ message: string; success: boolean } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchCount, setBatchCount] = useState(0);
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -58,12 +62,33 @@ export function MeasurementScreen() {
       });
 
       setStatus({ message: t('saveMeasurementSuccess'), success: true });
-      setWeightGrams('');
+
+      if (batchMode) {
+        setRfidTag('');
+        setBarcode('');
+        setAnimalId('');
+        setWeightGrams('');
+        setBatchCount((prev) => prev + 1);
+        setTimeout(() => {
+          setScannerTarget('animalId');
+        }, 500);
+      } else {
+        setWeightGrams('');
+      }
     } catch {
       setStatus({ message: t('saveError'), success: false });
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleBatchToggle = () => {
+    setBatchMode((prev) => {
+      if (prev) {
+        setBatchCount(0);
+      }
+      return !prev;
+    });
   };
 
   return (
@@ -72,6 +97,33 @@ export function MeasurementScreen() {
 
       <form onSubmit={handleSave} className="flex-1 space-y-3 p-4">
         <h1 className="mb-2 text-lg font-bold text-gray-800">{t('weightScreenTitle')}</h1>
+
+        {/* Batch Mode Toggle */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={batchMode}
+              onClick={handleBatchToggle}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                batchMode ? 'bg-blue-500' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  batchMode ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+            <span className="text-sm font-medium text-gray-700">Batch Mode</span>
+          </div>
+          {batchMode && batchCount > 0 && (
+            <span className="inline-flex w-fit items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+              Batch: {batchCount} saved
+            </span>
+          )}
+        </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">{t('farmId')}</label>
@@ -96,6 +148,7 @@ export function MeasurementScreen() {
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">{t('weightGrams')}</label>
+          <BluetoothScaleIndicator onWeightChange={(g) => setWeightGrams(String(g))} />
           <input
             type="number"
             inputMode="decimal"

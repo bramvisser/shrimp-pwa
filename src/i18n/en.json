@@ -82,5 +82,6 @@
   "causeDisease": "Disease",
   "causeHandling": "Handling",
   "causeWaterQuality": "Water quality",
-  "causeOther": "Other"
+  "causeOther": "Other",
+  "takePhoto": "Take Photo"
 }

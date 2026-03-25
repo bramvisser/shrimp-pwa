@@ -13,23 +13,38 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { AppTopBar } from '../components/AppTopBar';
-import { growthData, mortalityData, summaryStats } from '../data/mockDashboardData';
+import { useFarms } from '../hooks/useFarms';
+import { useDashboardData } from '../hooks/useDashboardData';
 
-const farms = [
-  { id: 'farm-1', name: 'Bang Pla Farm' },
-  { id: 'farm-2', name: 'Chanthaburi Farm' },
-  { id: 'farm-3', name: 'Surat Thani Farm' },
+/**
+ * Consistent color palette for dynamically discovered tanks.
+ * Colors cycle if there are more tanks than entries.
+ */
+const TANK_COLOR_PALETTE = [
+  '#3b82f6', // blue-500
+  '#22c55e', // green-500
+  '#f59e0b', // amber-500
+  '#ef4444', // red-500
+  '#8b5cf6', // violet-500
+  '#06b6d4', // cyan-500
+  '#ec4899', // pink-500
+  '#14b8a6', // teal-500
 ];
 
-const TANK_COLORS = {
-  'TNK-A1': '#3b82f6', // blue-500
-  'TNK-A2': '#22c55e', // green-500
-  'TNK-B1': '#f59e0b', // amber-500
-} as const;
+function getTankColor(index: number): string {
+  return TANK_COLOR_PALETTE[index % TANK_COLOR_PALETTE.length];
+}
 
 export function FarmDashboardScreen() {
   const { t: _t } = useTranslation();
-  const [selectedFarm, setSelectedFarm] = useState(farms[0].id);
+  const farms = useFarms();
+  const [selectedFarm, setSelectedFarm] = useState<string>('');
+
+  // Use the first farm as default once farms are loaded
+  const effectiveFarmId = selectedFarm || (farms.length > 0 ? farms[0].id : undefined);
+
+  const { growthData, mortalityData, summaryStats, tankIds, isMockData } =
+    useDashboardData(effectiveFarmId);
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -46,10 +61,13 @@ export function FarmDashboardScreen() {
           </label>
           <select
             id="farm-select"
-            value={selectedFarm}
+            value={effectiveFarmId ?? ''}
             onChange={(e) => setSelectedFarm(e.target.value)}
             className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
+            {farms.length === 0 && (
+              <option value="">Loading farms...</option>
+            )}
             {farms.map((farm) => (
               <option key={farm.id} value={farm.id}>
                 {farm.name}
@@ -57,6 +75,26 @@ export function FarmDashboardScreen() {
             ))}
           </select>
         </div>
+
+        {/* Sample data indicator */}
+        {isMockData && (
+          <div className="flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-200">
+            <svg
+              className="h-3.5 w-3.5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+              />
+            </svg>
+            Sample data — add measurements to see real results
+          </div>
+        )}
 
         {/* Summary stat cards - 2x2 grid */}
         <div className="grid grid-cols-2 gap-3">
@@ -115,30 +153,17 @@ export function FarmDashboardScreen() {
                 <Legend
                   wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="TNK-A1"
-                  stroke={TANK_COLORS['TNK-A1']}
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="TNK-A2"
-                  stroke={TANK_COLORS['TNK-A2']}
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="TNK-B1"
-                  stroke={TANK_COLORS['TNK-B1']}
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
+                {tankIds.map((tankId, index) => (
+                  <Line
+                    key={tankId}
+                    type="monotone"
+                    dataKey={tankId}
+                    stroke={getTankColor(index)}
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -176,24 +201,19 @@ export function FarmDashboardScreen() {
                 <Legend
                   wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
                 />
-                <Bar
-                  dataKey="TNK-A1"
-                  stackId="mortality"
-                  fill={TANK_COLORS['TNK-A1']}
-                  radius={[0, 0, 0, 0]}
-                />
-                <Bar
-                  dataKey="TNK-A2"
-                  stackId="mortality"
-                  fill={TANK_COLORS['TNK-A2']}
-                  radius={[0, 0, 0, 0]}
-                />
-                <Bar
-                  dataKey="TNK-B1"
-                  stackId="mortality"
-                  fill={TANK_COLORS['TNK-B1']}
-                  radius={[2, 2, 0, 0]}
-                />
+                {tankIds.map((tankId, index) => (
+                  <Bar
+                    key={tankId}
+                    dataKey={tankId}
+                    stackId="mortality"
+                    fill={getTankColor(index)}
+                    radius={
+                      index === tankIds.length - 1
+                        ? [2, 2, 0, 0]
+                        : [0, 0, 0, 0]
+                    }
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </div>

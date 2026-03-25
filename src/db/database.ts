@@ -37,6 +37,7 @@ export interface Mortality {
   animalId?: string;
   cause: MortalityCause;
   remarks?: string;
+  photo?: string;
   operatorName: string;
   createdAt: string;
   syncStatus: SyncStatus;

@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useRef, type FormEvent, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CameraIcon } from '@heroicons/react/24/outline';
+import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
 import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
 import { db, type MortalityCause } from '../db/database';
@@ -28,10 +28,54 @@ export function MortalityScreen() {
   const [animalId, setAnimalId] = useState('');
   const [cause, setCause] = useState<MortalityCause>('unknown');
   const [remarks, setRemarks] = useState('');
+  const [photo, setPhoto] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<{ message: string; success: boolean } | null>(null);
   const [scannerTarget, setScannerTarget] = useState<'tankId' | 'animalId' | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const resizeImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_WIDTH = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('Canvas not supported')); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePhotoCapture = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await resizeImage(file);
+      setPhoto(dataUrl);
+    } catch {
+      // silently ignore photo errors
+    }
+    // reset input so the same file can be re-selected
+    e.target.value = '';
+  };
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -56,6 +100,7 @@ export function MortalityScreen() {
         animalId: animalId.trim() || undefined,
         cause,
         remarks: remarks.trim() || undefined,
+        photo: photo || undefined,
         operatorName: operatorName || '',
         createdAt: new Date().toISOString(),
         syncStatus: 'pending',
@@ -64,6 +109,7 @@ export function MortalityScreen() {
 
       setStatus({ message: t('saveMortalitySuccess'), success: true });
       setRemarks('');
+      setPhoto(null);
     } catch {
       setStatus({ message: t('saveError'), success: false });
     } finally {
@@ -119,6 +165,43 @@ export function MortalityScreen() {
             rows={3}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">{t('photo')}</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoCapture}
+            className="hidden"
+          />
+          {photo ? (
+            <div className="relative inline-block">
+              <img
+                src={photo}
+                alt={t('photo')}
+                className="h-[100px] w-[100px] rounded-lg object-cover border border-gray-300"
+              />
+              <button
+                type="button"
+                onClick={() => setPhoto(null)}
+                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              <CameraIcon className="h-5 w-5" />
+              {t('takePhoto')}
+            </button>
+          )}
         </div>
 
         <button

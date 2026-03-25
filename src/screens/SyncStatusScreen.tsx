@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
 import { useFarms } from '../hooks/useFarms';
 import { useSyncStatus } from '../sync/useSyncStatus';
 import { useOnlineStatus } from '../sync/useOnlineStatus';
 import { syncAll, retryFailed } from '../sync/syncEngine';
+import { db } from '../db/database';
 import type { Measurement, Mortality } from '../db/database';
+import { exportMeasurementsCSV, exportMortalitiesCSV, downloadCSV } from '../utils/csvExport';
 
 export function SyncStatusScreen() {
   const { t } = useTranslation();
@@ -96,6 +99,33 @@ export function SyncStatusScreen() {
           records={syncedRecords}
           t={t}
         />
+
+        <div className="mt-6 flex flex-col gap-3">
+          <button
+            onClick={async () => {
+              const measurements = await db.measurements.toArray();
+              const csv = exportMeasurementsCSV(measurements);
+              const date = format(new Date(), 'yyyy-MM-dd');
+              downloadCSV(csv, `measurements-${date}.csv`);
+            }}
+            className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5" />
+            Export Measurements
+          </button>
+          <button
+            onClick={async () => {
+              const mortalities = await db.mortalities.toArray();
+              const csv = exportMortalitiesCSV(mortalities);
+              const date = format(new Date(), 'yyyy-MM-dd');
+              downloadCSV(csv, `mortalities-${date}.csv`);
+            }}
+            className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5" />
+            Export Mortalities
+          </button>
+        </div>
       </div>
     </div>
   );

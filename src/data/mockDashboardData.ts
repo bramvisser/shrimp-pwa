@@ -4,6 +4,7 @@ export interface GrowthDataPoint {
   'TNK-A1': number;
   'TNK-A2': number;
   'TNK-B1': number;
+  [tankId: string]: number | string;
 }
 
 export interface MortalityDataPoint {
@@ -12,6 +13,7 @@ export interface MortalityDataPoint {
   'TNK-A1': number;
   'TNK-A2': number;
   'TNK-B1': number;
+  [tankId: string]: number | string;
 }
 
 export interface SummaryStats {

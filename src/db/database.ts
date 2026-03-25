@@ -56,7 +56,7 @@ class ShrimpDatabase extends Dexie {
       mortalities: 'id, farmId, syncStatus, createdAt',
     });
     this.version(2).stores({
-      farms: 'id, slug',
+      farms: 'id, name, slug',
       measurements: 'id, farmId, syncStatus, createdAt',
       mortalities: 'id, farmId, syncStatus, createdAt',
     });

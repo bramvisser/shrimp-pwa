@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CameraIcon } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
+import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
 import { db, type MortalityCause } from '../db/database';
 import { useOperator } from '../hooks/useOperator';
 import { useFarms } from '../hooks/useFarms';
@@ -28,6 +30,7 @@ export function MortalityScreen() {
   const [remarks, setRemarks] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<{ message: string; success: boolean } | null>(null);
+  const [scannerTarget, setScannerTarget] = useState<'tankId' | 'animalId' | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -89,9 +92,9 @@ export function MortalityScreen() {
           </select>
           {errors.farmId && <p className="mt-1 text-sm text-red-500">{errors.farmId}</p>}
         </div>
-        <Field label={t('tankId')} value={tankId} onChange={setTankId} />
+        <ScanField label={t('tankId')} value={tankId} onChange={setTankId} onScan={() => setScannerTarget('tankId')} />
         <Field label={t('rfidTag')} value={rfidTag} onChange={setRfidTag} />
-        <Field label={t('animalId')} value={animalId} onChange={setAnimalId} />
+        <ScanField label={t('animalId')} value={animalId} onChange={setAnimalId} onScan={() => setScannerTarget('animalId')} />
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">{t('cause')}</label>
@@ -132,6 +135,53 @@ export function MortalityScreen() {
           </p>
         )}
       </form>
+
+      {scannerTarget && (
+        <BarcodeScannerModal
+          onScan={(value) => {
+            if (scannerTarget === 'tankId') setTankId(value);
+            else if (scannerTarget === 'animalId') setAnimalId(value);
+            setScannerTarget(null);
+          }}
+          onClose={() => setScannerTarget(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ScanField({
+  label,
+  value,
+  onChange,
+  onScan,
+  error,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onScan: () => void;
+  error?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <button
+          type="button"
+          onClick={onScan}
+          className="rounded-lg bg-gray-100 px-3 py-2 text-gray-600 hover:bg-gray-200"
+        >
+          <CameraIcon className="h-5 w-5" />
+        </button>
+      </div>
+      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
     </div>
   );
 }

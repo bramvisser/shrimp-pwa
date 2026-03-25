@@ -110,7 +110,7 @@ export function FarmDashboardScreen() {
                     border: '1px solid #e5e7eb',
                     fontSize: '12px',
                   }}
-                  formatter={(value: number) => [`${value}g`, undefined]}
+                  formatter={(value) => [`${value}g`]}
                 />
                 <Legend
                   wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}

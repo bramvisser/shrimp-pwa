@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -9,6 +9,21 @@ interface BarcodeScannerModalProps {
 
 export function BarcodeScannerModal({ onScan, onClose }: BarcodeScannerModalProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const stoppedRef = useRef(false);
+  const onScanRef = useRef(onScan);
+  const onCloseRef = useRef(onClose);
+  onScanRef.current = onScan;
+  onCloseRef.current = onClose;
+
+  const stopScanner = useCallback(async () => {
+    if (stoppedRef.current) return;
+    stoppedRef.current = true;
+    try {
+      await scannerRef.current?.stop();
+    } catch {
+      // already stopped
+    }
+  }, []);
 
   useEffect(() => {
     const scanner = new Html5Qrcode('barcode-reader');
@@ -18,19 +33,19 @@ export function BarcodeScannerModal({ onScan, onClose }: BarcodeScannerModalProp
       .start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          onScan(decodedText);
-          scanner.stop().catch(console.error);
-          onClose();
+        async (decodedText) => {
+          await stopScanner();
+          onScanRef.current(decodedText);
+          onCloseRef.current();
         },
         undefined
       )
       .catch(console.error);
 
     return () => {
-      scanner.stop().catch(() => {});
+      stopScanner();
     };
-  }, [onScan, onClose]);
+  }, [stopScanner]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">

@@ -7,6 +7,8 @@ import { MortalityScreen } from '../screens/MortalityScreen';
 import { SyncStatusScreen } from '../screens/SyncStatusScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { DeviceConnectionScreen } from '../screens/DeviceConnectionScreen';
+import { FarmDashboardScreen } from '../screens/FarmDashboardScreen';
+import { AlertsScreen } from '../screens/AlertsScreen';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const name = localStorage.getItem('operator_name');
@@ -75,6 +77,22 @@ export const router = createBrowserRouter([
     element: (
       <AuthGuard>
         <DeviceConnectionScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/dashboard',
+    element: (
+      <AuthGuard>
+        <FarmDashboardScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/alerts',
+    element: (
+      <AuthGuard>
+        <AlertsScreen />
       </AuthGuard>
     ),
   },

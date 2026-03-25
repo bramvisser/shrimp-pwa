@@ -5,15 +5,20 @@ import {
   ExclamationTriangleIcon,
   DevicePhoneMobileIcon,
   ArrowPathIcon,
+  ChartBarIcon,
+  BellAlertIcon,
 } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
 import { ActionCard } from '../components/ActionCard';
+import { AlertsBadge } from '../components/AlertsBadge';
 import { useOperator } from '../hooks/useOperator';
+import { mockAlerts } from '../data/mockAlerts';
 
 export function HomeScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { name } = useOperator();
+  const alertCount = mockAlerts.filter((a) => !a.acknowledged).length;
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -41,6 +46,23 @@ export function HomeScreen() {
             title={t('actionMortality')}
             subtitle={t('actionMortalitySubtitle')}
             onClick={() => navigate('/mortality')}
+          />
+          <ActionCard
+            icon={<ChartBarIcon className="h-8 w-8" />}
+            title="Dashboard"
+            subtitle="Farm analytics"
+            onClick={() => navigate('/dashboard')}
+          />
+          <ActionCard
+            icon={
+              <div className="relative">
+                <BellAlertIcon className="h-8 w-8" />
+                <AlertsBadge count={alertCount} />
+              </div>
+            }
+            title="Alerts"
+            subtitle="Decision feedback"
+            onClick={() => navigate('/alerts')}
           />
           <ActionCard
             icon={<DevicePhoneMobileIcon className="h-8 w-8" />}

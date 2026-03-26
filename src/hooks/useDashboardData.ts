@@ -197,32 +197,22 @@ function computeDashboardAggregates(
 }
 
 // ---------------------------------------------------------------------------
-// Apply tank filter to aggregated results
+// Filter raw data by selected tanks (before aggregation so stats update too)
 // ---------------------------------------------------------------------------
 
-function applyTankFilter(
-  result: AggregateResult,
+function filterByTanks<T extends { tankId: string }>(
+  rows: T[],
   selectedTanks: string[],
-): { growthData: DashboardGrowthPoint[]; mortalityData: DashboardMortalityPoint[]; tankIds: string[] } {
-  // Empty selection = show all
-  const activeTanks =
-    selectedTanks.length === 0
-      ? result.allTankIds
-      : result.allTankIds.filter((t) => selectedTanks.includes(t));
+): T[] {
+  if (selectedTanks.length === 0) return rows; // empty = all
+  return rows.filter((r) => selectedTanks.includes(r.tankId));
+}
 
-  const growthData = result.growthData.map((point) => {
-    const filtered: DashboardGrowthPoint = { week: point.week, label: point.label as string };
-    for (const t of activeTanks) filtered[t] = point[t];
-    return filtered;
-  });
-
-  const mortalityData = result.mortalityData.map((point) => {
-    const filtered: DashboardMortalityPoint = { week: point.week, label: point.label as string };
-    for (const t of activeTanks) filtered[t] = point[t];
-    return filtered;
-  });
-
-  return { growthData, mortalityData, tankIds: activeTanks };
+function collectTankIds(measurements: RawMeasurement[], mortalities: RawMortality[]): string[] {
+  const set = new Set<string>();
+  measurements.forEach((m) => set.add(m.tankId));
+  mortalities.forEach((m) => set.add(m.tankId));
+  return Array.from(set).sort();
 }
 
 // ---------------------------------------------------------------------------
@@ -288,16 +278,18 @@ export function useDashboardData(filters: DashboardFilters): DashboardData {
             createdAt: r.client_created_at,
           }));
 
-        const agg = computeDashboardAggregates(rawM, rawMort);
-        const { growthData, mortalityData, tankIds } = applyTankFilter(agg, selectedTanks);
+        const availableTanks = collectTankIds(rawM, rawMort);
+        const filteredM = filterByTanks(rawM, selectedTanks);
+        const filteredMort = filterByTanks(rawMort, selectedTanks);
+        const agg = computeDashboardAggregates(filteredM, filteredMort);
 
         if (reqId !== reqIdRef.current) return;
         setData({
-          growthData,
-          mortalityData,
+          growthData: agg.growthData,
+          mortalityData: agg.mortalityData,
           summaryStats: agg.summaryStats,
-          tankIds,
-          availableTanks: agg.allTankIds,
+          tankIds: agg.allTankIds,
+          availableTanks,
           isLoading: false,
           dataSource: rawM.length === 0 && rawMort.length === 0 ? 'empty' : 'supabase',
         });
@@ -328,16 +320,18 @@ export function useDashboardData(filters: DashboardFilters): DashboardData {
         .filter((m) => m.tankId)
         .map((m) => ({ tankId: m.tankId!, createdAt: m.createdAt }));
 
-      const agg = computeDashboardAggregates(rawM, rawMort);
-      const { growthData, mortalityData, tankIds } = applyTankFilter(agg, selectedTanks);
+      const availableTanks = collectTankIds(rawM, rawMort);
+      const filteredM = filterByTanks(rawM, selectedTanks);
+      const filteredMort = filterByTanks(rawMort, selectedTanks);
+      const agg = computeDashboardAggregates(filteredM, filteredMort);
 
       if (reqId !== reqIdRef.current) return;
       setData({
-        growthData,
-        mortalityData,
+        growthData: agg.growthData,
+        mortalityData: agg.mortalityData,
         summaryStats: agg.summaryStats,
-        tankIds,
-        availableTanks: agg.allTankIds,
+        tankIds: agg.allTankIds,
+        availableTanks,
         isLoading: false,
         dataSource: rawM.length === 0 && rawMort.length === 0 ? 'empty' : 'local',
       });

@@ -148,21 +148,15 @@ export function useBluetoothScale(): UseBluetoothScaleReturn {
     setIsConnecting(true);
 
     try {
-      let device: BluetoothDevice;
-
-      try {
-        // Attempt 1: filter by the standard Weight Scale service
-        device = await navigator.bluetooth.requestDevice({
-          filters: [{ services: [WEIGHT_SCALE_SERVICE] }],
-        });
-      } catch {
-        // Attempt 2: accept *any* device (user will pick manually)
-        // Some scales don't advertise the standard service UUID.
-        device = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [WEIGHT_SCALE_SERVICE],
-        });
-      }
+      // Accept all BLE devices so non-standard scales (and scales that
+      // don't advertise 0x181D) still appear in the picker. We request
+      // the standard Weight Scale service as optional so we can use it
+      // if available.  A single requestDevice call is required — Chrome
+      // only allows one per user gesture.
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [WEIGHT_SCALE_SERVICE],
+      });
 
       deviceRef.current = device;
       device.addEventListener('gattserverdisconnected', handleDisconnect);

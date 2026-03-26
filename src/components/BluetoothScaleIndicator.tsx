@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { useBluetoothScale } from '../hooks/useBluetoothScale';
 
@@ -28,6 +29,7 @@ export function BluetoothScaleIndicator({ onWeightChange }: BluetoothScaleIndica
     weight,
     error,
   } = useBluetoothScale();
+  const { t } = useTranslation();
 
   // Forward weight to parent whenever it changes
   const onWeightChangeRef = useRef(onWeightChange);
@@ -56,7 +58,7 @@ export function BluetoothScaleIndicator({ onWeightChange }: BluetoothScaleIndica
 
       {/* Label / weight */}
       {isConnecting && (
-        <span className="text-yellow-600">Connecting...</span>
+        <span className="text-yellow-600">{t('connecting')}</span>
       )}
 
       {isConnected && weight !== null && (
@@ -64,11 +66,11 @@ export function BluetoothScaleIndicator({ onWeightChange }: BluetoothScaleIndica
       )}
 
       {isConnected && weight === null && (
-        <span className="text-gray-500">Waiting for reading...</span>
+        <span className="text-gray-500">{t('waitingForReading')}</span>
       )}
 
       {!isConnected && !isConnecting && (
-        <span className="text-gray-500">Scale disconnected</span>
+        <span className="text-gray-500">{t('scaleDisconnected')}</span>
       )}
 
       {/* Connect / disconnect button */}
@@ -78,7 +80,7 @@ export function BluetoothScaleIndicator({ onWeightChange }: BluetoothScaleIndica
           onClick={disconnect}
           className="ml-auto rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-200"
         >
-          Disconnect
+          {t('disconnect')}
         </button>
       ) : (
         <button
@@ -87,7 +89,7 @@ export function BluetoothScaleIndicator({ onWeightChange }: BluetoothScaleIndica
           disabled={isConnecting}
           className="ml-auto rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 hover:bg-blue-100 disabled:opacity-50"
         >
-          {isConnecting ? '...' : 'Connect Scale'}
+          {isConnecting ? '...' : t('connectScale')}
         </button>
       )}
 

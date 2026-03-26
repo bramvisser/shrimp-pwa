@@ -49,8 +49,8 @@ export function HomeScreen() {
           />
           <ActionCard
             icon={<ChartBarIcon className="h-8 w-8" />}
-            title="Dashboard"
-            subtitle="Farm analytics"
+            title={t('actionDashboard')}
+            subtitle={t('actionDashboardSubtitle')}
             onClick={() => navigate('/dashboard')}
           />
           <ActionCard
@@ -60,8 +60,8 @@ export function HomeScreen() {
                 <AlertsBadge count={alertCount} />
               </div>
             }
-            title="Alerts"
-            subtitle="Decision feedback"
+            title={t('actionAlerts')}
+            subtitle={t('actionAlertsSubtitle')}
             onClick={() => navigate('/alerts')}
           />
           <ActionCard

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   ExclamationTriangleIcon,
   ExclamationCircleIcon,
@@ -52,6 +53,7 @@ function AlertIcon({ type }: { type: AlertType }) {
 }
 
 export function AlertsScreen() {
+  const { t } = useTranslation();
   const alerts = useAlerts();
 
   const sortedAlerts = [...alerts].sort(
@@ -72,17 +74,17 @@ export function AlertsScreen() {
         <div className="mb-4 flex items-center gap-2">
           {criticalCount > 0 && (
             <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700">
-              {criticalCount} critical
+              {criticalCount} {t('critical')}
             </span>
           )}
           {warningCount > 0 && (
             <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700">
-              {warningCount} warnings
+              {warningCount} {t('warnings')}
             </span>
           )}
           {infoCount > 0 && (
             <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
-              {infoCount} info
+              {infoCount} {t('info')}
             </span>
           )}
         </div>
@@ -132,14 +134,14 @@ export function AlertsScreen() {
                         </span>
                         {isRead ? (
                           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-400">
-                            Archived
+                            {t('archived')}
                           </span>
                         ) : (
                           <button
                             onClick={() => markAlertRead(alert.id)}
                             className="rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 active:bg-gray-200"
                           >
-                            Mark as read
+                            {t('markAsRead')}
                           </button>
                         )}
                       </div>

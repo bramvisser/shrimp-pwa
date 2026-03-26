@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { getTankColor } from '../utils/tankColors';
 import type { DateRangeOption } from '../hooks/useDashboardData';
 
@@ -23,6 +24,7 @@ export function DashboardFilters({
   selectedTanks,
   onSelectedTanksChange,
 }: DashboardFiltersProps) {
+  const { t } = useTranslation();
   const allSelected = selectedTanks.length === 0;
 
   function toggleTank(tankId: string) {
@@ -48,7 +50,7 @@ export function DashboardFilters({
     <div className="space-y-3">
       {/* Date range */}
       <div>
-        <p className="mb-1.5 text-xs font-medium text-gray-500">Date Range</p>
+        <p className="mb-1.5 text-xs font-medium text-gray-500">{t('dateRange')}</p>
         <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-sm">
           {DATE_RANGE_OPTIONS.map((opt) => (
             <button
@@ -70,13 +72,13 @@ export function DashboardFilters({
       {availableTanks.length > 0 && (
         <div>
           <div className="mb-1.5 flex items-center justify-between">
-            <p className="text-xs font-medium text-gray-500">Tanks</p>
+            <p className="text-xs font-medium text-gray-500">{t('tanks')}</p>
             {!allSelected && (
               <button
                 onClick={() => onSelectedTanksChange([])}
                 className="text-xs text-blue-500 active:text-blue-700"
               >
-                Show all
+                {t('showAll')}
               </button>
             )}
           </div>

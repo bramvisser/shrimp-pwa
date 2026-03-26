@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { AppTopBar } from '../components/AppTopBar';
 
 const APP_URL = 'https://shrimp-pwa.vercel.app';
@@ -12,6 +13,7 @@ const APP_URL = 'https://shrimp-pwa.vercel.app';
  */
 
 export function ShareScreen() {
+  const { t } = useTranslation();
   // Use a reliable QR code rendering via an inline SVG data URI approach
   // We'll use the app URL encoded into a QR code image via the qrcode generation
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(APP_URL)}&format=svg`;
@@ -34,7 +36,7 @@ export function ShareScreen() {
 
         {/* URL label */}
         <p className="mt-4 text-center text-sm font-medium text-gray-500">
-          Scan to open
+          {t('scanToOpen')}
         </p>
         <p className="mt-1 text-center text-lg font-bold text-blue-600">
           {APP_URL.replace('https://', '')}
@@ -42,7 +44,7 @@ export function ShareScreen() {
 
         {/* Instructions */}
         <p className="mt-6 max-w-xs text-center text-sm text-gray-400">
-          Open your phone camera and point it at the QR code to open the app
+          {t('scanInstructions')}
         </p>
       </div>
     </div>

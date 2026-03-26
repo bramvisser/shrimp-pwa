@@ -20,7 +20,7 @@ import type { DateRangeOption } from '../hooks/useDashboardData';
 import { getTankColor } from '../utils/tankColors';
 
 export function FarmDashboardScreen() {
-  const { t: _t } = useTranslation();
+  const { t } = useTranslation();
   const farms = useFarms();
   const [selectedFarmSlug, setSelectedFarmSlug] = useState<string>('');
   const [dateRange, setDateRange] = useState<DateRangeOption>('last12w');
@@ -49,7 +49,7 @@ export function FarmDashboardScreen() {
             htmlFor="farm-select"
             className="mb-1 block text-sm font-medium text-gray-700"
           >
-            Select Farm
+            {t('selectFarm')}
           </label>
           <select
             id="farm-select"
@@ -58,7 +58,7 @@ export function FarmDashboardScreen() {
             className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             {farms.length === 0 && (
-              <option value="">Loading farms...</option>
+              <option value="">{t('loadingFarms')}</option>
             )}
             {farms.map((farm) => (
               <option key={farm.id} value={farm.slug}>
@@ -93,13 +93,13 @@ export function FarmDashboardScreen() {
                 d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
               />
             </svg>
-            No data for this farm yet — add measurements to see results
+            {t('noDataForFarm')}
           </div>
         )}
 
         {dataSource === 'local' && !isLoading && (
           <div className="flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700">
-            Showing local data (offline)
+            {t('showingLocalData')}
           </div>
         )}
 
@@ -121,22 +121,22 @@ export function FarmDashboardScreen() {
             {/* Summary stat cards - 2x2 grid */}
             <div className="grid grid-cols-2 gap-3">
               <StatCard
-                label="Total Animals"
+                label={t('totalAnimals')}
                 value={summaryStats.totalAnimals.toLocaleString()}
                 color="blue"
               />
               <StatCard
-                label="Avg Weight"
+                label={t('avgWeight')}
                 value={`${summaryStats.averageWeight}g`}
                 color="green"
               />
               <StatCard
-                label="Survival Rate"
+                label={t('survivalRate')}
                 value={`${summaryStats.survivalRate}%`}
                 color="yellow"
               />
               <StatCard
-                label="Best Tank"
+                label={t('bestTank')}
                 value={summaryStats.bestTank}
                 color="blue"
               />
@@ -145,7 +145,7 @@ export function FarmDashboardScreen() {
             {/* Growth curve line chart */}
             <div className="rounded-lg bg-white p-4 shadow">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                Growth Curve (Avg Weight)
+                {t('growthCurve')}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -194,7 +194,7 @@ export function FarmDashboardScreen() {
             {/* Mortality bar chart */}
             <div className="rounded-lg bg-white p-4 shadow">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                Weekly Mortality
+                {t('weeklyMortality')}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">

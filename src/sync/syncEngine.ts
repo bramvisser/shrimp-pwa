@@ -118,9 +118,33 @@ async function syncMortalities() {
   return { synced, failed };
 }
 
+async function syncAlertReadState() {
+  const pending = await db.alerts
+    .where('readSyncStatus')
+    .equals('pending')
+    .toArray();
+
+  if (pending.length === 0) return;
+
+  for (const alert of pending) {
+    try {
+      if (!supabase) throw new Error('Supabase not configured');
+      const { error } = await supabase
+        .from('alerts')
+        .update({ read_at: alert.readAt })
+        .eq('id', alert.id);
+      if (error) throw error;
+      await db.alerts.update(alert.id, { readSyncStatus: 'synced' });
+    } catch (err) {
+      console.warn(`Failed to sync read state for alert ${alert.id}:`, err);
+    }
+  }
+}
+
 export async function syncAll() {
   const mResult = await syncMeasurements();
   const tResult = await syncMortalities();
+  await syncAlertReadState();
 
   return {
     synced: mResult.synced + tResult.synced,

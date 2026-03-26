@@ -1,20 +1,21 @@
-import { useState } from 'react';
 import {
   ExclamationTriangleIcon,
   ExclamationCircleIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
+import { formatDistanceToNow } from 'date-fns';
 import { AppTopBar } from '../components/AppTopBar';
-import { mockAlerts, type Alert } from '../data/mockAlerts';
+import { useAlerts, markAlertRead } from '../hooks/useAlerts';
+import type { AlertType } from '../db/database';
 
-const severityOrder: Record<Alert['type'], number> = {
+const severityOrder: Record<AlertType, number> = {
   critical: 0,
   warning: 1,
   info: 2,
 };
 
 const typeStyles: Record<
-  Alert['type'],
+  AlertType,
   { bar: string; icon: string; badge: string; badgeText: string }
 > = {
   critical: {
@@ -37,7 +38,7 @@ const typeStyles: Record<
   },
 };
 
-function AlertIcon({ type }: { type: Alert['type'] }) {
+function AlertIcon({ type }: { type: AlertType }) {
   const className = `h-6 w-6 ${typeStyles[type].icon}`;
 
   switch (type) {
@@ -51,19 +52,15 @@ function AlertIcon({ type }: { type: Alert['type'] }) {
 }
 
 export function AlertsScreen() {
-  const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
+  const alerts = useAlerts();
 
-  const sortedAlerts = [...mockAlerts].sort(
+  const sortedAlerts = [...alerts].sort(
     (a, b) => severityOrder[a.type] - severityOrder[b.type],
   );
 
-  const criticalCount = mockAlerts.filter((a) => a.type === 'critical').length;
-  const warningCount = mockAlerts.filter((a) => a.type === 'warning').length;
-  const infoCount = mockAlerts.filter((a) => a.type === 'info').length;
-
-  function handleAcknowledge(id: string) {
-    setAcknowledged((prev) => new Set(prev).add(id));
-  }
+  const criticalCount = alerts.filter((a) => a.type === 'critical').length;
+  const warningCount = alerts.filter((a) => a.type === 'warning').length;
+  const infoCount = alerts.filter((a) => a.type === 'info').length;
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -92,15 +89,14 @@ export function AlertsScreen() {
         {/* Alert cards */}
         <div className="space-y-3">
           {sortedAlerts.map((alert) => {
-            const isAcknowledged =
-              alert.acknowledged || acknowledged.has(alert.id);
+            const isRead = alert.readAt !== null;
             const styles = typeStyles[alert.type];
 
             return (
               <div
                 key={alert.id}
                 className={`overflow-hidden rounded-lg bg-white shadow transition-opacity ${
-                  isAcknowledged ? 'opacity-40' : ''
+                  isRead ? 'opacity-40' : ''
                 }`}
               >
                 <div className="flex">
@@ -118,9 +114,9 @@ export function AlertsScreen() {
                       <p className="font-semibold text-gray-900">
                         {alert.title}
                       </p>
-                      {(alert.farm || alert.tank) && (
+                      {(alert.farmName || alert.tankId) && (
                         <p className="text-sm text-gray-500">
-                          {[alert.farm, alert.tank]
+                          {[alert.farmName, alert.tankId]
                             .filter(Boolean)
                             .join(' \u2014 ')}
                         </p>
@@ -131,14 +127,14 @@ export function AlertsScreen() {
 
                       <div className="mt-3 flex items-center justify-between">
                         <span className="text-xs text-gray-400">
-                          {alert.timestamp}
+                          {formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}
                         </span>
-                        {!isAcknowledged && (
+                        {!isRead && (
                           <button
-                            onClick={() => handleAcknowledge(alert.id)}
+                            onClick={() => markAlertRead(alert.id)}
                             className="rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 active:bg-gray-200"
                           >
-                            Acknowledge
+                            Mark as read
                           </button>
                         )}
                       </div>

@@ -12,13 +12,13 @@ import { AppTopBar } from '../components/AppTopBar';
 import { ActionCard } from '../components/ActionCard';
 import { AlertsBadge } from '../components/AlertsBadge';
 import { useOperator } from '../hooks/useOperator';
-import { mockAlerts } from '../data/mockAlerts';
+import { useUnreadAlertCount } from '../hooks/useAlerts';
 
 export function HomeScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { name } = useOperator();
-  const alertCount = mockAlerts.filter((a) => !a.acknowledged).length;
+  const alertCount = useUnreadAlertCount();
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">

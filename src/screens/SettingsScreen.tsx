@@ -10,6 +10,7 @@ const LANGUAGES = [
   { code: 'th', label: 'thai' },
   { code: 'nl', label: 'dutch' },
   { code: 'es', label: 'spanish' },
+  { code: 'zh', label: 'mandarin' },
 ] as const;
 
 export function SettingsScreen() {

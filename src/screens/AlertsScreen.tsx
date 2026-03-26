@@ -58,9 +58,10 @@ export function AlertsScreen() {
     (a, b) => severityOrder[a.type] - severityOrder[b.type],
   );
 
-  const criticalCount = alerts.filter((a) => a.type === 'critical').length;
-  const warningCount = alerts.filter((a) => a.type === 'warning').length;
-  const infoCount = alerts.filter((a) => a.type === 'info').length;
+  const unread = alerts.filter((a) => a.readAt === null);
+  const criticalCount = unread.filter((a) => a.type === 'critical').length;
+  const warningCount = unread.filter((a) => a.type === 'warning').length;
+  const infoCount = unread.filter((a) => a.type === 'info').length;
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">

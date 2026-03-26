@@ -130,7 +130,11 @@ export function AlertsScreen() {
                         <span className="text-xs text-gray-400">
                           {formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}
                         </span>
-                        {!isRead && (
+                        {isRead ? (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-400">
+                            Archived
+                          </span>
+                        ) : (
                           <button
                             onClick={() => markAlertRead(alert.id)}
                             className="rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 active:bg-gray-200"

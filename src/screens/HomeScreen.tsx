@@ -7,6 +7,7 @@ import {
   ArrowPathIcon,
   ChartBarIcon,
   BellAlertIcon,
+  ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
 import { ActionCard } from '../components/ActionCard';
@@ -63,6 +64,12 @@ export function HomeScreen() {
             title={t('actionAlerts')}
             subtitle={t('actionAlertsSubtitle')}
             onClick={() => navigate('/alerts')}
+          />
+          <ActionCard
+            icon={<ArrowsRightLeftIcon className="h-8 w-8" />}
+            title={t('actionCompare')}
+            subtitle={t('actionCompareSubtitle')}
+            onClick={() => navigate('/compare')}
           />
           <ActionCard
             icon={<DevicePhoneMobileIcon className="h-8 w-8" />}

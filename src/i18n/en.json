@@ -121,5 +121,17 @@
   "scanToOpen": "Scan to open",
   "scanInstructions": "Open your phone camera and point it at the QR code to open the app",
   "shareApp": "Share App (QR Code)",
-  "pendingCount": "{{count}} pending"
+  "pendingCount": "{{count}} pending",
+  "actionCompare": "Compare Tanks",
+  "actionCompareSubtitle": "Side-by-side analytics",
+  "tankA": "Tank A",
+  "tankB": "Tank B",
+  "selectTankA": "Select Tank A",
+  "selectTankB": "Select Tank B",
+  "selectTwoTanks": "Select two different tanks to compare",
+  "sameTankWarning": "Please select two different tanks",
+  "weightDelta": "Weight Difference",
+  "survivalDelta": "Survival Rate",
+  "totalAnimalsDelta": "Total Animals",
+  "mortalityDelta": "Mortality Count"
 }

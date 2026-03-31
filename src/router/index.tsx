@@ -10,6 +10,7 @@ import { DeviceConnectionScreen } from '../screens/DeviceConnectionScreen';
 import { FarmDashboardScreen } from '../screens/FarmDashboardScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
 import { ShareScreen } from '../screens/ShareScreen';
+import { CompareScreen } from '../screens/CompareScreen';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const name = localStorage.getItem('operator_name');
@@ -94,6 +95,14 @@ export const router = createBrowserRouter([
     element: (
       <AuthGuard>
         <AlertsScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/compare',
+    element: (
+      <AuthGuard>
+        <CompareScreen />
       </AuthGuard>
     ),
   },

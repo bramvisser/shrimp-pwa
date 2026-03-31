@@ -121,5 +121,17 @@
   "scanToOpen": "扫码打开",
   "scanInstructions": "打开手机相机，对准二维码即可打开应用",
   "shareApp": "分享应用（二维码）",
-  "pendingCount": "{{count}} 待同步"
+  "pendingCount": "{{count}} 待同步",
+  "actionCompare": "对比水池",
+  "actionCompareSubtitle": "并排分析",
+  "tankA": "水池 A",
+  "tankB": "水池 B",
+  "selectTankA": "选择水池 A",
+  "selectTankB": "选择水池 B",
+  "selectTwoTanks": "选择两个不同的水池进行对比",
+  "sameTankWarning": "请选择两个不同的水池",
+  "weightDelta": "重量差异",
+  "survivalDelta": "存活率",
+  "totalAnimalsDelta": "动物总数",
+  "mortalityDelta": "死亡数量"
 }

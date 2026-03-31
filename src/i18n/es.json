@@ -121,5 +121,17 @@
   "scanToOpen": "Escanear para abrir",
   "scanInstructions": "Abre la cámara de tu teléfono y apunta al código QR para abrir la app",
   "shareApp": "Compartir app (código QR)",
-  "pendingCount": "{{count}} pendientes"
+  "pendingCount": "{{count}} pendientes",
+  "actionCompare": "Comparar tanques",
+  "actionCompareSubtitle": "Análisis lado a lado",
+  "tankA": "Tanque A",
+  "tankB": "Tanque B",
+  "selectTankA": "Seleccionar Tanque A",
+  "selectTankB": "Seleccionar Tanque B",
+  "selectTwoTanks": "Seleccione dos tanques diferentes para comparar",
+  "sameTankWarning": "Por favor seleccione dos tanques diferentes",
+  "weightDelta": "Diferencia de peso",
+  "survivalDelta": "Tasa de supervivencia",
+  "totalAnimalsDelta": "Total de animales",
+  "mortalityDelta": "Conteo de mortalidad"
 }

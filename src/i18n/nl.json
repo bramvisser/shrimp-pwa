@@ -121,5 +121,17 @@
   "scanToOpen": "Scan om te openen",
   "scanInstructions": "Open de camera van je telefoon en richt op de QR-code om de app te openen",
   "shareApp": "App delen (QR-code)",
-  "pendingCount": "{{count}} in wachtrij"
+  "pendingCount": "{{count}} in wachtrij",
+  "actionCompare": "Tanks vergelijken",
+  "actionCompareSubtitle": "Zij-aan-zij analyse",
+  "tankA": "Tank A",
+  "tankB": "Tank B",
+  "selectTankA": "Selecteer Tank A",
+  "selectTankB": "Selecteer Tank B",
+  "selectTwoTanks": "Selecteer twee verschillende tanks om te vergelijken",
+  "sameTankWarning": "Selecteer twee verschillende tanks",
+  "weightDelta": "Gewichtsverschil",
+  "survivalDelta": "Overlevingspercentage",
+  "totalAnimalsDelta": "Totaal dieren",
+  "mortalityDelta": "Sterftecijfer"
 }

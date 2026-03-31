@@ -121,5 +121,17 @@
   "scanToOpen": "สแกนเพื่อเปิด",
   "scanInstructions": "เปิดกล้องโทรศัพท์แล้วชี้ไปที่ QR code เพื่อเปิดแอป",
   "shareApp": "แชร์แอป (QR Code)",
-  "pendingCount": "{{count}} รอดำเนินการ"
+  "pendingCount": "{{count}} รอดำเนินการ",
+  "actionCompare": "เปรียบเทียบถัง",
+  "actionCompareSubtitle": "วิเคราะห์เคียงข้างกัน",
+  "tankA": "ถัง A",
+  "tankB": "ถัง B",
+  "selectTankA": "เลือกถัง A",
+  "selectTankB": "เลือกถัง B",
+  "selectTwoTanks": "เลือกสองถังที่แตกต่างกันเพื่อเปรียบเทียบ",
+  "sameTankWarning": "กรุณาเลือกสองถังที่แตกต่างกัน",
+  "weightDelta": "ความแตกต่างของน้ำหนัก",
+  "survivalDelta": "อัตราการรอดชีวิต",
+  "totalAnimalsDelta": "จำนวนสัตว์ทั้งหมด",
+  "mortalityDelta": "จำนวนการตาย"
 }

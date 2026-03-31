@@ -35,10 +35,10 @@ export function SyncStatusScreen() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex h-dvh flex-col bg-gray-50">
       <AppTopBar />
 
-      <div className="flex-1 p-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-4">
         <h1 className="mb-3 text-lg font-bold text-gray-800">{t('syncStatusTitle')}</h1>
 
         <select

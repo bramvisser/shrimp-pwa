@@ -21,10 +21,10 @@ export function HomeScreen() {
   const alertCount = useUnreadAlertCount();
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex h-dvh flex-col bg-gray-50">
       <AppTopBar />
 
-      <div className="flex-1 p-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-4">
         <div className="mb-6 rounded-xl bg-blue-500 p-4 text-white shadow">
           <p className="text-sm opacity-80">{t('welcome')}</p>
           <p className="text-lg font-bold">{name}</p>

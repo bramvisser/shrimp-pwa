@@ -92,10 +92,10 @@ export function MeasurementScreen() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex h-dvh flex-col bg-gray-50">
       <AppTopBar />
 
-      <form onSubmit={handleSave} className="flex-1 space-y-3 p-4">
+      <form onSubmit={handleSave} className="flex-1 overflow-y-auto overscroll-contain space-y-3 p-4">
         <h1 className="mb-2 text-lg font-bold text-gray-800">{t('weightScreenTitle')}</h1>
 
         {/* Batch Mode Toggle */}

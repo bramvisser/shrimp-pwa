@@ -7,10 +7,10 @@ export function DeviceConnectionScreen() {
   const scale = useBluetoothScale();
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex h-dvh flex-col bg-gray-50">
       <AppTopBar />
 
-      <div className="flex-1 space-y-3 p-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain space-y-3 p-4">
         <h1 className="mb-2 text-lg font-bold text-gray-800">{t('deviceConnections')}</h1>
 
         {/* BLE Scale — real implementation */}

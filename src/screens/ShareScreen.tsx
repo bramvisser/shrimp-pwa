@@ -19,10 +19,10 @@ export function ShareScreen() {
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(APP_URL)}&format=svg`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex h-dvh flex-col bg-gray-50">
       <AppTopBar />
 
-      <div className="flex flex-1 flex-col items-center justify-center p-6">
+      <div className="flex flex-1 overflow-y-auto overscroll-contain flex-col items-center justify-center p-6">
         {/* QR Code */}
         <div className="rounded-2xl bg-white p-6 shadow-lg">
           <img

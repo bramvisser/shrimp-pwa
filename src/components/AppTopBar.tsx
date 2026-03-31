@@ -8,7 +8,7 @@ export function AppTopBar() {
   const isHome = location.pathname === '/home';
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between bg-white px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm">
+    <header className="z-10 shrink-0 flex items-center justify-between bg-white px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 shadow-sm">
       <div className="w-10">
         {!isHome && (
           <button onClick={() => navigate(-1)} className="p-1 text-gray-600">

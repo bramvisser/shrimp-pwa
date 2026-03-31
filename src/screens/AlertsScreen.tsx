@@ -66,10 +66,10 @@ export function AlertsScreen() {
   const infoCount = unread.filter((a) => a.type === 'info').length;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex h-dvh flex-col bg-gray-50">
       <AppTopBar />
 
-      <div className="flex-1 p-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-4">
         {/* Summary badges */}
         <div className="mb-4 flex items-center gap-2">
           {criticalCount > 0 && (

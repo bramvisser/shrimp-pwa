@@ -19,9 +19,11 @@ export function useSyncStatus(farmFilter?: string) {
   }, [farmFilter]);
 
   const allRecords = [...(measurements || []), ...(mortalities || [])];
-  const pendingRecords = allRecords.filter((r) => r.syncStatus === 'pending');
-  const syncedRecords = allRecords.filter((r) => r.syncStatus === 'synced');
-  const failedRecords = allRecords.filter((r) => r.syncStatus === 'failed');
+  const byDateDesc = (a: { createdAt: string }, b: { createdAt: string }) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  const pendingRecords = allRecords.filter((r) => r.syncStatus === 'pending').sort(byDateDesc);
+  const syncedRecords = allRecords.filter((r) => r.syncStatus === 'synced').sort(byDateDesc);
+  const failedRecords = allRecords.filter((r) => r.syncStatus === 'failed').sort(byDateDesc);
 
   return {
     measurements: measurements || [],

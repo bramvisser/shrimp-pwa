@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AppTopBar } from '../../components/AppTopBar';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
-import { useLines, useRunEvaluation } from '../../breeding/hooks';
+import { useLines, useRunEvaluation, type EvaluationProgress } from '../../breeding/hooks';
 import type { TraitCode } from '../../breeding/types';
 
 const TRAIT_CHOICES: { code: TraitCode; label: string }[] = [
@@ -14,7 +14,7 @@ const TRAIT_CHOICES: { code: TraitCode; label: string }[] = [
 ];
 
 export function EvaluateScreen() {
-  const { runEvaluation, running, lastError } = useRunEvaluation();
+  const { runEvaluation, running, lastError, progress } = useRunEvaluation();
   const lines = useLines() ?? [];
   const [trait, setTrait] = useState<TraitCode>('HBW');
   const [method, setMethod] = useState<'PBLUP' | 'ssGBLUP'>('ssGBLUP');
@@ -79,6 +79,7 @@ export function EvaluateScreen() {
               : `Run ${method} for ${trait}${lineId ? ` on ${lineId}` : ' (pooled)'}`}
           </button>
 
+          {running && progress && <ProgressBar progress={progress} />}
           {lastError && <p className="mt-2 text-xs text-red-600">{lastError}</p>}
           {last && (
             <p className="mt-2 text-xs text-gray-600">
@@ -126,6 +127,27 @@ export function EvaluateScreen() {
           conjugate gradient over the Henderson MMEs.
         </p>
       </div>
+    </div>
+  );
+}
+
+function ProgressBar({ progress }: { progress: EvaluationProgress }) {
+  const pct = Math.round(progress.fraction * 100);
+  return (
+    <div className="mt-3">
+      <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+        <span className="font-medium text-gray-700">{progress.label}</span>
+        <span className="font-mono tabular-nums text-gray-500">{pct}%</span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+        <div
+          className="h-full bg-blue-500 transition-[width] duration-150 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      {progress.detail && (
+        <p className="mt-1 font-mono text-[11px] text-gray-500">{progress.detail}</p>
+      )}
     </div>
   );
 }

@@ -39,7 +39,9 @@ self.addEventListener('message', async (e: MessageEvent<IncomingMsg>) => {
   try {
     if (msg.type === 'runEvaluation') {
       const t0 = performance.now();
-      const run = await runEvaluation(msg.payload);
+      const run = await runEvaluation(msg.payload, (p) => {
+        self.postMessage({ id: msg.id, type: 'progress', progress: p });
+      });
       self.postMessage({
         id: msg.id,
         type: 'done',

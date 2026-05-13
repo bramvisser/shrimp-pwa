@@ -10,8 +10,10 @@ import {
   simulateGenotypeFor,
   genotypeQC,
 } from './service';
-import { predictGEBVOnWorker, runEvaluationOnWorker } from './workerClient';
+import { predictGEBVOnWorker, runEvaluationOnWorker, type EvaluationProgress } from './workerClient';
 import type { Animal, BreedingValueRun, MatingPlan, TraitCode } from './types';
+
+export type { EvaluationProgress };
 
 let seedPromise: Promise<unknown> | null = null;
 
@@ -132,12 +134,17 @@ async function nudgeLiveQueries() {
 export function useRunEvaluation() {
   const [running, setRunning] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<EvaluationProgress | null>(null);
   const fn = useCallback(
     async (trait: TraitCode, method: 'PBLUP' | 'ssGBLUP', panelId?: string, lineId?: string) => {
       setRunning(true);
       setLastError(null);
+      setProgress(null);
       try {
-        const { run } = await runEvaluationOnWorker({ trait, method, panelId, lineId });
+        const { run } = await runEvaluationOnWorker(
+          { trait, method, panelId, lineId },
+          (p) => setProgress(p),
+        );
         await nudgeLiveQueries();
         return run;
       } catch (e) {
@@ -149,7 +156,7 @@ export function useRunEvaluation() {
     },
     [],
   );
-  return { runEvaluation: fn, running, lastError };
+  return { runEvaluation: fn, running, lastError, progress };
 }
 
 export function usePredictGEBV() {

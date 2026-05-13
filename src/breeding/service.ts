@@ -44,16 +44,89 @@ export type EvaluationOptions = {
   lineId?: string;      // optional — restrict the evaluation to one line
 };
 
+export type EvaluationStage =
+  | 'load'
+  | 'pedigree'
+  | 'records'
+  | 'dosage'
+  | 'gmatrix'
+  | 'blend'
+  | 'solve'
+  | 'snpeffects'
+  | 'persist'
+  | 'done';
+
+export type EvaluationProgress = {
+  stage: EvaluationStage;
+  label: string;
+  fraction: number;       // 0..1 overall
+  detail?: string;        // e.g. "iter 120 / 600, residual 1.4e-5"
+};
+
+// Weight each stage gets in the overall progress bar. PCG dominates, so it
+// owns the largest slice.
+const STAGE_WEIGHTS: Record<EvaluationStage, number> = {
+  load: 0.05,
+  pedigree: 0.05,
+  records: 0.03,
+  dosage: 0.10,
+  gmatrix: 0.10,
+  blend: 0.07,
+  solve: 0.50,
+  snpeffects: 0.05,
+  persist: 0.05,
+  done: 0,
+};
+
+const STAGE_LABELS: Record<EvaluationStage, string> = {
+  load: 'Loading animals & phenotypes',
+  pedigree: 'Building pedigree A⁻¹',
+  records: 'Assembling design matrix',
+  dosage: 'Loading dosage matrix',
+  gmatrix: 'Building genomic G matrix',
+  blend: 'Blending H = A + G − A22',
+  solve: 'Solving MMEs (PCG)',
+  snpeffects: 'Back-solving SNP effects',
+  persist: 'Saving run to database',
+  done: 'Done',
+};
+
+function stageFraction(stage: EvaluationStage, within = 1): number {
+  const order: EvaluationStage[] = [
+    'load', 'pedigree', 'records', 'dosage', 'gmatrix',
+    'blend', 'solve', 'snpeffects', 'persist', 'done',
+  ];
+  let acc = 0;
+  for (const s of order) {
+    if (s === stage) return Math.min(1, acc + STAGE_WEIGHTS[s] * within);
+    acc += STAGE_WEIGHTS[s];
+  }
+  return 1;
+}
+
 // Run a single-trait BLUP / ssGBLUP evaluation across the entire population
 // (or a single line). Persists a BreedingValueRun row, BreedingValue rows
 // for every animal in scope, and — for ssGBLUP — the SnpEffects payload
 // that powers instant GEBV prediction.
-export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingValueRun> {
+export async function runEvaluation(
+  opts: EvaluationOptions,
+  onProgress?: (p: EvaluationProgress) => void,
+): Promise<BreedingValueRun> {
   const t0 = performance.now();
   const trait = TRAITS.find((t) => t.code === opts.trait);
   if (!trait) throw new Error('unknown trait ' + opts.trait);
   const lambda = (1 - trait.heritability) / trait.heritability;
 
+  const emit = (stage: EvaluationStage, within = 1, detail?: string) => {
+    onProgress?.({
+      stage,
+      label: STAGE_LABELS[stage],
+      fraction: stageFraction(stage, within),
+      detail,
+    });
+  };
+
+  emit('load', 0);
   const animals = opts.lineId
     ? await db.animals.where('lineId').equals(opts.lineId).toArray()
     : await db.animals.toArray();
@@ -62,12 +135,16 @@ export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingVa
   const allPhenos = await db.phenotypes.where('trait').equals(opts.trait).toArray();
   const phenos = opts.lineId ? allPhenos.filter((p) => animalIds.has(p.animalId)) : allPhenos;
   if (phenos.length === 0) throw new Error(`no phenotypes recorded for ${opts.trait} in scope`);
+  emit('load', 1, `${animals.length} animals · ${phenos.length} records`);
 
   // 1. Build pedigree A^{-1}.
+  emit('pedigree', 0);
   const { index, F, Ainv } = pedigreeAinverse(animals);
   const n = index.ids.length;
+  emit('pedigree', 1, `n=${n}`);
 
   // 2. Build the records design.
+  emit('records', 0);
   const useable = phenos.filter((p) => index.idIndex.has(p.animalId));
   const m = useable.length;
   const y = new Float64Array(m);
@@ -84,6 +161,7 @@ export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingVa
   // X = column of ones — we fit a single overall mean as the only fixed effect.
   const X: Mat = { rows: m, cols: 1, data: new Float64Array(m) };
   for (let i = 0; i < m; i++) X.data[i] = 1;
+  emit('records', 1, `m=${m}`);
 
   const runId = `run-${Date.now()}`;
   let snpEffects: number[] | null = null;
@@ -91,6 +169,23 @@ export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingVa
   let trainingAccuracy = 0;
   const KinvDiag = new Float64Array(n);
   let solveResult: { beta: Float64Array; a: Float64Array; iters: number; residual: number } | null = null;
+
+  // Throttled PCG iter callback: emit at most every 50ms or every 10 iters.
+  let lastEmit = 0;
+  const pcgOnIter = (iter: number, maxIter: number, residual: number, tol: number) => {
+    const now = performance.now();
+    if (iter > 0 && iter % 10 !== 0 && now - lastEmit < 50 && residual > tol) return;
+    lastEmit = now;
+    // Smooth progress: combine iter fraction with a log-scale residual fraction
+    // (PCG converges geometrically, so log(resid) drops linearly).
+    const iterFrac = Math.min(1, iter / Math.max(1, maxIter));
+    const resFrac = residual <= tol
+      ? 1
+      : Math.min(1, Math.max(0, Math.log10(1) - Math.log10(residual / tol))
+                          / Math.max(1, Math.log10(1 / tol)));
+    const within = Math.max(iterFrac, resFrac);
+    emit('solve', within, `iter ${iter}/${maxIter} · residual ${residual.toExponential(2)}`);
+  };
 
   if (opts.method === 'PBLUP') {
     for (let i = 0; i < n; i++) KinvDiag[i] = Ainv.diag[i];
@@ -103,10 +198,13 @@ export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingVa
       Kinv: Ainv,
       KinvDiag,
     };
-    solveResult = solveBlup(inputs);
+    emit('solve', 0);
+    solveResult = solveBlup(inputs, { onIter: pcgOnIter });
+    emit('solve', 1, `${solveResult.iters} iters`);
   } else {
     // ssGBLUP: load genotypes, build G, A22, blend, derive H^{-1} correction.
     if (!opts.panelId) throw new Error('panelId required for ssGBLUP');
+    emit('dosage', 0);
     const panel = await db.snpPanels.get(opts.panelId);
     if (!panel) throw new Error('panel not found: ' + opts.panelId);
     const allGenoBlobs = await db.genotypes.where('panelId').equals(opts.panelId).toArray();
@@ -121,9 +219,15 @@ export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingVa
       if (idx === undefined) throw new Error('genotype for unknown animal: ' + genoBlobs[i].animalId);
       genoIdx[i] = idx;
     }
+    emit('dosage', 1, `${genoBlobs.length} genotypes · ${dosage.m} SNPs`);
+
+    emit('gmatrix', 0);
     const freqs = estimateFreqs(dosage);
     const Z = centerDosage(dosage, freqs);
     const { G, k } = vanRadenG(Z);
+    emit('gmatrix', 1, `G is ${G.rows}×${G.cols}`);
+
+    emit('blend', 0);
     const A22 = buildA22((i, j) => pairKinship(index, i, j), genoIdx);
     const Gblend = blendGenomic(G, A22, 0.05);
     const Ginv = invertSymPD(Gblend);
@@ -132,6 +236,7 @@ export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingVa
     for (let i = 0; i < D.rows; i++)
       for (let j = 0; j < D.cols; j++)
         D.data[i * D.cols + j] = Ginv.data[i * D.cols + j] - A22inv.data[i * D.cols + j];
+    emit('blend', 1);
 
     // Diagonal of H^{-1} = diag(A^{-1}) plus correction on the genotyped block.
     for (let i = 0; i < n; i++) KinvDiag[i] = Ainv.diag[i];
@@ -182,13 +287,17 @@ export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingVa
       for (let i = 0; i < genoIdx.length; i++) Ha[genoIdx[i]] += ys[i];
       for (let i = 0; i < n; i++) oa[i] += lambda * Ha[i];
     };
-    const r = pcg(apply, diag, rhs, { tol: 1e-7 });
+    emit('solve', 0);
+    const r = pcg(apply, diag, rhs, { tol: 1e-7, onIter: pcgOnIter });
     solveResult = {
       beta: new Float64Array(r.x.buffer, r.x.byteOffset, X.cols),
       a: new Float64Array(r.x.buffer, r.x.byteOffset + X.cols * 8, n),
       iters: r.iters,
       residual: r.residual,
     };
+    emit('solve', 1, `${r.iters} iters · residual ${r.residual.toExponential(2)}`);
+
+    emit('snpeffects', 0);
     // Back out SNP effects β̂ from the genotyped subset of â.
     const aGeno = new Float64Array(genoIdx.length);
     for (let i = 0; i < genoIdx.length; i++) aGeno[i] = solveResult.a[genoIdx[i]];
@@ -211,10 +320,13 @@ export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingVa
       const row = dosage.data.subarray(i * dosage.m, (i + 1) * dosage.m);
       return predictGEBVDosage(row, freqs, beta) - snpMeanAdjust;
     });
+    emit('snpeffects', 1, `training acc ${trainingAccuracy.toFixed(3)}`);
   }
 
   if (!solveResult) throw new Error('solver did not run');
   const accuracies = approxAccuracy(recordAnimal, KinvDiag, lambda);
+
+  emit('persist', 0);
 
   const finishedAt = new Date().toISOString();
   const run: BreedingValueRun = {
@@ -275,6 +387,8 @@ export async function runEvaluation(opts: EvaluationOptions): Promise<BreedingVa
     };
     await db.snpEffects.put(eff);
   }
+  emit('persist', 1);
+  emit('done', 1);
   // Suppress yMean for the lint-strict TS config — it's intentionally unused
   // beyond the inline mean centring above, which the solver already handles.
   void yMeanFix;

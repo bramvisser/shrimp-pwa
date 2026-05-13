@@ -87,7 +87,13 @@ function isSparse(K: SparseSym | Mat): K is SparseSym {
   return 'diag' in K;
 }
 
-export function solveBlup(inp: BlupInputs, opts: { tol?: number } = {}): {
+export function solveBlup(
+  inp: BlupInputs,
+  opts: {
+    tol?: number;
+    onIter?: (iter: number, maxIter: number, residual: number, tol: number) => void;
+  } = {},
+): {
   beta: Float64Array;
   a: Float64Array;
   iters: number;
@@ -117,7 +123,10 @@ export function solveBlup(inp: BlupInputs, opts: { tol?: number } = {}): {
   // Floor to keep PCG safe.
   for (let i = 0; i < N; i++) if (diag[i] < 1e-10) diag[i] = 1e-10;
   const apply = (x: Vec, out: Vec) => applyMME(inp, x, out);
-  const { x, iters, residual } = pcg(apply, diag, rhs, { tol: opts.tol ?? 1e-7 });
+  const { x, iters, residual } = pcg(apply, diag, rhs, {
+    tol: opts.tol ?? 1e-7,
+    onIter: opts.onIter,
+  });
   return {
     beta: new Float64Array(x.buffer, x.byteOffset, p),
     a: new Float64Array(x.buffer, x.byteOffset + p * 8, n),

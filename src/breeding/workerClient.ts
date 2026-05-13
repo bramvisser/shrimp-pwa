@@ -4,6 +4,9 @@
 // connection warm.
 
 import type { BreedingValueRun, TraitCode } from './types';
+import type { EvaluationProgress } from './service';
+
+export type { EvaluationProgress } from './service';
 
 type GEBVRow = { trait: TraitCode; gebv: number; modelVersion: string; usedLine: string | null };
 
@@ -11,6 +14,7 @@ type DonePayload =
   | { type: 'done'; run: BreedingValueRun; elapsedMs: number }
   | { type: 'done'; result: GEBVRow[]; elapsedMs: number };
 
+type ProgressPayload = { type: 'progress'; progress: EvaluationProgress };
 type ErrorPayload = { type: 'error'; error: string };
 
 let worker: Worker | null = null;
@@ -23,15 +27,22 @@ function getWorker(): Worker {
   return worker;
 }
 
-type AnyResponse = (DonePayload | ErrorPayload) & { id: string };
+type AnyResponse = (DonePayload | ProgressPayload | ErrorPayload) & { id: string };
 
-function sendRequest<T>(payload: object): Promise<T> {
+function sendRequest<T>(
+  payload: object,
+  onProgress?: (p: EvaluationProgress) => void,
+): Promise<T> {
   const w = getWorker();
   const id = String(nextId++);
   return new Promise<T>((resolve, reject) => {
     const handler = (e: MessageEvent<AnyResponse>) => {
       const data = e.data;
       if (data.id !== id) return;
+      if (data.type === 'progress') {
+        onProgress?.(data.progress);
+        return;
+      }
       w.removeEventListener('message', handler);
       if (data.type === 'error') {
         reject(new Error(data.error));
@@ -44,16 +55,19 @@ function sendRequest<T>(payload: object): Promise<T> {
   });
 }
 
-export async function runEvaluationOnWorker(args: {
-  trait: TraitCode;
-  method: 'PBLUP' | 'ssGBLUP';
-  panelId?: string;
-  lineId?: string;
-}): Promise<{ run: BreedingValueRun; elapsedMs: number }> {
-  const r = await sendRequest<{ run: BreedingValueRun; elapsedMs: number }>({
-    type: 'runEvaluation',
-    payload: args,
-  });
+export async function runEvaluationOnWorker(
+  args: {
+    trait: TraitCode;
+    method: 'PBLUP' | 'ssGBLUP';
+    panelId?: string;
+    lineId?: string;
+  },
+  onProgress?: (p: EvaluationProgress) => void,
+): Promise<{ run: BreedingValueRun; elapsedMs: number }> {
+  const r = await sendRequest<{ run: BreedingValueRun; elapsedMs: number }>(
+    { type: 'runEvaluation', payload: args },
+    onProgress,
+  );
   return r;
 }
 

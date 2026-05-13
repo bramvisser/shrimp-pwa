@@ -214,7 +214,11 @@ export function pcg(
   apply: (x: Vec, out: Vec) => void,
   diag: Float64Array,
   b: Vec,
-  opts: { tol?: number; maxIter?: number } = {},
+  opts: {
+    tol?: number;
+    maxIter?: number;
+    onIter?: (iter: number, maxIter: number, residual: number, tol: number) => void;
+  } = {},
 ): { x: Vec; iters: number; residual: number } {
   const n = b.length;
   const tol = opts.tol ?? 1e-8;
@@ -229,6 +233,7 @@ export function pcg(
   const bnorm = Math.max(1, Math.sqrt(dot(b, b)));
   let iter = 0;
   let resid = Math.sqrt(dot(r, r)) / bnorm;
+  opts.onIter?.(0, maxIter, resid, tol);
   while (iter < maxIter && resid > tol) {
     apply(p, Ap);
     const alpha = rz / dot(p, Ap);
@@ -241,6 +246,7 @@ export function pcg(
     rz = rzNew;
     iter++;
     resid = Math.sqrt(dot(r, r)) / bnorm;
+    opts.onIter?.(iter, maxIter, resid, tol);
   }
   return { x, iters: iter, residual: resid };
 }

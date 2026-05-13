@@ -11,6 +11,15 @@ import { FarmDashboardScreen } from '../screens/FarmDashboardScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
 import { ShareScreen } from '../screens/ShareScreen';
 import { CompareScreen } from '../screens/CompareScreen';
+import { BreedingHomeScreen } from '../screens/breeding/BreedingHomeScreen';
+import { PedigreeScreen } from '../screens/breeding/PedigreeScreen';
+import { GenotypingScreen } from '../screens/breeding/GenotypingScreen';
+import { EvaluateScreen } from '../screens/breeding/EvaluateScreen';
+import { GEBVScreen } from '../screens/breeding/GEBVScreen';
+import { SelectionScreen } from '../screens/breeding/SelectionScreen';
+import { GeneticProgressScreen } from '../screens/breeding/GeneticProgressScreen';
+import { ProgramScreen } from '../screens/breeding/ProgramScreen';
+import { GameScreen } from '../screens/breeding/GameScreen';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const name = localStorage.getItem('operator_name');
@@ -111,6 +120,78 @@ export const router = createBrowserRouter([
     element: (
       <AuthGuard>
         <ShareScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/breeding',
+    element: (
+      <AuthGuard>
+        <BreedingHomeScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/breeding/pedigree',
+    element: (
+      <AuthGuard>
+        <PedigreeScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/breeding/genotyping',
+    element: (
+      <AuthGuard>
+        <GenotypingScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/breeding/evaluate',
+    element: (
+      <AuthGuard>
+        <EvaluateScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/breeding/gebv',
+    element: (
+      <AuthGuard>
+        <GEBVScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/breeding/selection',
+    element: (
+      <AuthGuard>
+        <SelectionScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/breeding/progress',
+    element: (
+      <AuthGuard>
+        <GeneticProgressScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/breeding/program',
+    element: (
+      <AuthGuard>
+        <ProgramScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/breeding/game',
+    element: (
+      <AuthGuard>
+        <GameScreen />
       </AuthGuard>
     ),
   },

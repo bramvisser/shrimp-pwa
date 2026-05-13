@@ -133,5 +133,7 @@
   "weightDelta": "Weight Difference",
   "survivalDelta": "Survival Rate",
   "totalAnimalsDelta": "Total Animals",
-  "mortalityDelta": "Mortality Count"
+  "mortalityDelta": "Mortality Count",
+  "actionBreeding": "Breeding Program",
+  "actionBreedingSubtitle": "Pedigree, GEBV, planner"
 }

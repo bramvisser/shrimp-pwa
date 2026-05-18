@@ -3,9 +3,11 @@
 // Conventions:
 // - All IDs are short strings (e.g. "A0001"). They are stable across DB versions.
 // - Values are SI: weight in grams, time in days, fractions in [0,1].
-// - Trait codes are short symbols: HBW (harvest body weight), ADG (avg daily gain),
-//   SURV (survival to harvest), WSSV (WSSV survival), AHPND (AHPND survival),
-//   FCR (residual feed intake / feed efficiency), YIELD (meat yield %).
+// - Trait codes: HBW (harvest body weight), TagW (weight at PIT-tagging),
+//   EMS_SURV (survival under EMS challenge), EMS_DtD (survival time under
+//   challenge — modelled higher-is-better), OP (commercial-sentinel harvest weight).
+//   Legacy codes (ADG, SURV, WSSV, AHPND, FCR, YIELD) are retained in the union for
+//   historical-data compatibility but are not used by the active program.
 
 export type Sex = 'M' | 'F';
 
@@ -18,16 +20,116 @@ export type LifeStage =
   | 'dead'
   | 'culled';
 
+// Decision-level state, orthogonal to biological LifeStage. Drives the
+// "what can I act on right now" view on the farm.
+export type ProgramStatus =
+  | 'candidate'    // in family / grow-out tank, not yet decided on
+  | 'selected'     // passed keepersort, sitting in a maturation tank
+  | 'mated'        // already used in a spawn, no longer available
+  | 'deselected'   // failed keepersort; moved out of NP (often to MP)
+  | 'culled'       // removed from the program
+  | 'inactive';    // historic: harvested, dead, or otherwise out of play
+
+// Where an animal lives in the breeding pyramid.
+export type Tier = 'NP' | 'MP';
+
+// Phenotyping / challenge destinations for sibs of a candidate cohort.
+// `hawaii-nucleus`   — sibs of candidates measured for HBW/TagW under nucleus conditions
+// `ems-challenge`    — sibs subjected to EMS challenge for DtD + survival
+// `indonesia-sentinel`, `india-sentinel` — cousins of candidates grown out commercially for OP
+export type TestSite =
+  | 'hawaii-nucleus'
+  | 'ems-challenge'
+  | 'indonesia-sentinel'
+  | 'india-sentinel';
+
 export type Line = {
-  id: string;             // 'SPF-A', 'SPR-WSSV', etc.
+  id: string;             // 'SP' (Speed) or 'ST' (Strength) in the new model
   name: string;
   kind: 'SPF' | 'SPR';
-  pathogenFocus?: 'WSSV' | 'TSV' | 'AHPND' | 'EHP' | null;
+  pathogenFocus?: 'WSSV' | 'TSV' | 'AHPND' | 'EHP' | 'EMS' | null;
   foundedAt: string;      // ISO date
   notes?: string;
 };
 
-export type TraitCode = 'HBW' | 'ADG' | 'SURV' | 'WSSV' | 'AHPND' | 'FCR' | 'YIELD';
+// A spawning batch is the unit of program operation. Multiple batches per line
+// run in parallel and overlap; matings can be cross-batch.
+// Naming: `${lineId}_${YY}${NN}` (e.g. 'SP_2601') where NN is the sequence in
+// the year. Three batches/year per line by default.
+export type Batch = {
+  id: string;             // 'SP_2601'
+  lineId: string;
+  year: number;
+  sequenceInYear: number; // 1..3 (or 4) within the year
+  // Calendar anchors (ISO dates). Optional dates fill in as the batch progresses.
+  matingWeek: number;     // ISO week within `year` when matings happened
+  spawnDate: string;
+  hatchDate?: string;
+  familyTankDate?: string;
+  taggingDate?: string;
+  selectionDate?: string;
+  status:
+    | 'planned'
+    | 'spawning'
+    | 'larval'
+    | 'family-tank'
+    | 'tagged'
+    | 'selection'      // keepersort in progress
+    | 'mating'         // broodstock mating to seed the next batch
+    | 'completed';
+  notes?: string;
+};
+
+// A single 1:1 mating that produces (or seeds) offspring in a future batch.
+export type Mating = {
+  id: string;
+  // The future-offspring batch this mating contributes to.
+  offspringBatchId: string;
+  // Source-batch parents (may come from different batches in cross-batch mating).
+  sireId: string;
+  damId: string;
+  spawnTank: string;      // maturation/spawn tank ID
+  plannedAt: string;
+  executedAt?: string;
+  status: 'planned' | 'executed' | 'failed' | 'canceled';
+  // Output (filled in once the offspring batch is hatched).
+  familyId?: string;
+  offspringCount?: number;
+  notes?: string;
+};
+
+// Audit trail of state-changing actions on individual animals.
+export type LifecycleEvent = {
+  id: string;
+  animalId: string;
+  ts: string;
+  kind:
+    | 'selected'
+    | 'deselected'
+    | 'mated'
+    | 'culled'
+    | 'genotyped'
+    | 'phenotyped'
+    | 'tagged'
+    | 'transferred';
+  actor: string;          // operator name or 'system'
+  details?: Record<string, unknown>;
+};
+
+export type TraitCode =
+  // Active production traits in the new model:
+  | 'HBW'      // harvest body weight (sibs at Hawaii nucleus harvest)
+  | 'TagW'     // weight at PIT-tagging (on candidates)
+  | 'EMS_SURV' // survival under EMS challenge (sibs)
+  | 'EMS_DtD'  // survival time under EMS challenge (sibs); higher = better
+  | 'OP'       // observed performance at commercial sentinel (cousins)
+  // Legacy / kept for back-compat:
+  | 'ADG'
+  | 'SURV'
+  | 'WSSV'
+  | 'AHPND'
+  | 'FCR'
+  | 'YIELD';
 
 export type Trait = {
   code: TraitCode;
@@ -39,9 +141,10 @@ export type Trait = {
   residualVariance: number;   // σ²_e
   // Selection-index economic weight in $ per unit of trait per harvested animal.
   economicWeight: number;
-  // Higher is better? Mortality-style traits (WSSV) are stored as survival probabilities,
-  // so higher is always better.
-  betterIsHigher: true;
+  // Higher is better? Mortality-style traits are stored as survival probabilities or
+  // survival time, so higher is usually better, but we allow `false` so traits like
+  // raw days-to-death can be modelled directly without inverting.
+  betterIsHigher: boolean;
 };
 
 // Pairwise additive genetic correlation, e.g. r_g(HBW, WSSV) ≈ -0.6.
@@ -63,8 +166,27 @@ export type Animal = {
   tankId: string | null;
   stage: LifeStage;
   spfStatus: 'SPF' | 'SPR' | 'unverified';
-  // Tag for animals created inside a game session (forked timeline).
-  gameSessionId?: string;
+
+  // ---- New batch / pyramid fields ----
+  // The spawning batch this animal belongs to. null for founders.
+  batchId: string | null;
+  // PIT-tag, assigned at tagging-time for candidates that survive to PIT-tagging.
+  pitTag?: string;
+  // Pyramid tier this animal lives in.
+  tier: Tier;
+  // Where sibs/cousins of this animal are being tested. Undefined for animals
+  // not designated to a test site (i.e. they are candidates kept in the nucleus).
+  testSite?: TestSite;
+  // Decision-level status. Drives "what can I act on now" views.
+  programStatus: ProgramStatus;
+  // Maturation/spawn tank assignment for selected broodstock.
+  spawnTank?: string;
+  // Decision timestamps.
+  selectedAt?: string;
+  deselectedAt?: string;
+  matedAt?: string;
+  culledAt?: string;
+
   // Hidden truth used by the simulator only — never displayed as truth.
   // For traits {HBW, WSSV, ...}: the animal's true additive breeding value.
   // Not used by any production logic; production logic predicts EBVs from data.
@@ -194,71 +316,6 @@ export type MatingPlan = {
     expectedIndex: number;     // ($) mid-parent index
     expectedF: number;         // F of the offspring under the pedigree
   }[];
-};
-
-// Game / scenario mode — turns the breeding program into a flight simulator
-// where the human and the autonomous agent run side by side from the same
-// state. The simulator (and only the simulator) knows the true breeding
-// values, so each round can score Player vs AI vs Oracle.
-
-export type GameSession = {
-  id: string;
-  startedAt: string;
-  startedBy: string;             // operator name
-  // Generation at which the session was anchored (last "real" gen at start).
-  startGeneration: number;
-  status: 'active' | 'finished';
-  // Player-set parameters that frame the run.
-  config: {
-    nMatings: number;
-    inbreedingCeiling: number;
-    economicWeights: Partial<Record<TraitCode, number>>;
-  };
-};
-
-// Per-future scoring for one round.
-export type FutureScore = {
-  // Mean true-BV index of the offspring cohort (the realised quantity).
-  meanTrueIndex: number;
-  // Mean predicted index from the mating plan (mid-parent).
-  meanPredictedIndex: number;
-  // Mean inbreeding coefficient of offspring.
-  meanF: number;
-  // Mean true value per trait, useful for diagnosis.
-  meanTrueByTrait: Partial<Record<TraitCode, number>>;
-};
-
-// In-memory representation of a candidate animal for the game's per-future
-// pools. We carry both the truth (for Oracle and offspring sampling) and the
-// best estimate (for Player and AI ranking).
-export type VirtualBroodstock = {
-  id: string;
-  sex: Sex;
-  trueBV: Record<TraitCode, number>;
-  ebv: Partial<Record<TraitCode, number>>;
-  inbreeding: number;
-  sireId: string | null;
-  damId: string | null;
-};
-
-export type GameRound = {
-  id: string;
-  sessionId: string;
-  generation: number;
-  committedAt: string;
-  player: FutureScore;
-  ai: FutureScore;
-  oracle: FutureScore;
-  // Top-N selected offspring per future, used as the candidate pool for the
-  // next round. Player's offspring are also persisted to db.animals (tagged
-  // with gameSessionId); AI and Oracle offspring exist only here.
-  nextPools: {
-    player: VirtualBroodstock[];
-    ai: VirtualBroodstock[];
-    oracle: VirtualBroodstock[];
-  };
-  // Plain-English notes from the post-round analyser.
-  feedback: string[];
 };
 
 // Per-decision audit trail entry, stored as immutable rows.

@@ -11,93 +11,88 @@
 // the same data model whether it came from real records or simulation.
 
 import type {
-  Animal,
   GeneticCorrelation,
-  Phenotype,
-  Sex,
   SnpPanel,
   Trait,
   TraitCode,
 } from './types';
-import { bernoulli, beta, gaussian, makeRng, shuffle, type Rng } from './math/rng';
+import { bernoulli, beta, gaussian, type Rng } from './math/rng';
 
+// The five active traits for the Speed + Strength breeding program. Numbers
+// reflect realistic vannamei genetic parameters reported in the literature.
+//
+//   HBW       sib harvest body weight at the Hawaii nucleus pond
+//   TagW      weight at PIT-tagging (~5 g) on candidates
+//   EMS_SURV  survival under EMS sib challenge (proportion)
+//   EMS_DtD   survival time under EMS challenge (hours; higher = better)
+//   OP        observed performance at commercial sentinels (cousins, g)
 export const TRAITS: Trait[] = [
-  // Numbers cite literature ranges from the research dossier.
   {
     code: 'HBW',
     name: 'Harvest body weight',
     unit: 'g',
     heritability: 0.22,
-    geneticVariance: 6.0,    // σ²_a in g² (mean ~22g, σ_a ~2.45g)
-    residualVariance: 21.3,  // h² 0.22 ⇒ σ²_p = 27.3
-    economicWeight: 0.06,    // $/g
+    geneticVariance: 6.0,
+    residualVariance: 21.3,
+    economicWeight: 0.06,
     betterIsHigher: true,
   },
   {
-    code: 'ADG',
-    name: 'Average daily gain',
-    unit: 'g/day',
-    heritability: 0.25,
-    geneticVariance: 0.001,
-    residualVariance: 0.003,
-    economicWeight: 18.0,
+    code: 'TagW',
+    name: 'Tagging weight',
+    unit: 'g',
+    heritability: 0.30,
+    geneticVariance: 0.25,
+    residualVariance: 0.58,
+    economicWeight: 0.04,
     betterIsHigher: true,
   },
   {
-    code: 'SURV',
-    name: 'Survival to harvest',
+    code: 'EMS_SURV',
+    name: 'EMS survival',
     unit: 'prob',
-    heritability: 0.06,
-    geneticVariance: 0.005,
-    residualVariance: 0.0784,
-    economicWeight: 0.6,     // $/prob, integrated against per-batch yield
+    heritability: 0.14,
+    geneticVariance: 0.035,
+    residualVariance: 0.215,
+    economicWeight: 1.2,
     betterIsHigher: true,
   },
   {
-    code: 'WSSV',
-    name: 'WSSV survival',
-    unit: 'prob',
-    heritability: 0.18,
-    geneticVariance: 0.04,
-    residualVariance: 0.182,
-    economicWeight: 1.4,     // $/prob, market-weighted
-    betterIsHigher: true,
-  },
-  {
-    code: 'AHPND',
-    name: 'AHPND survival',
-    unit: 'prob',
+    code: 'EMS_DtD',
+    name: 'EMS survival time',
+    unit: 'hours',
     heritability: 0.12,
-    geneticVariance: 0.02,
-    residualVariance: 0.146,
-    economicWeight: 0.9,
+    geneticVariance: 80,     // σ_a ≈ 8.9 h
+    residualVariance: 590,
+    economicWeight: 0.02,
     betterIsHigher: true,
   },
   {
-    code: 'YIELD',
-    name: 'Meat yield',
-    unit: '%',
-    heritability: 0.22,
-    geneticVariance: 1.5,
-    residualVariance: 5.3,
-    economicWeight: 0.5,
+    code: 'OP',
+    name: 'Commercial harvest weight',
+    unit: 'g',
+    heritability: 0.18,
+    geneticVariance: 4.8,
+    residualVariance: 21.9,
+    economicWeight: 0.08,
     betterIsHigher: true,
   },
 ];
 
-// The dominant antagonism in vannamei breeding: faster shrimp die first under
-// WSSV. Other correlations from the dossier.
+// Antagonisms documented for vannamei: growth and disease-resistance often
+// trade off, and commercial-environment weight has high but imperfect rg with
+// the nucleus environment (G×E).
 export const GCORR: GeneticCorrelation[] = [
-  { a: 'HBW', b: 'WSSV', rg: -0.6 },
-  { a: 'HBW', b: 'ADG', rg: 0.92 },
-  { a: 'HBW', b: 'SURV', rg: -0.15 },
-  { a: 'HBW', b: 'YIELD', rg: 0.2 },
-  { a: 'WSSV', b: 'AHPND', rg: 0.4 },
-  { a: 'SURV', b: 'WSSV', rg: 0.3 },
-  { a: 'ADG', b: 'WSSV', rg: -0.55 },
+  { a: 'HBW', b: 'TagW', rg: 0.85 },      // early growth tracks late growth
+  { a: 'HBW', b: 'EMS_SURV', rg: -0.35 }, // fast shrimp slightly weaker under EMS
+  { a: 'HBW', b: 'EMS_DtD', rg: -0.30 },
+  { a: 'HBW', b: 'OP', rg: 0.72 },        // G×E: nucleus ↔ commercial
+  { a: 'TagW', b: 'OP', rg: 0.55 },
+  { a: 'TagW', b: 'EMS_SURV', rg: -0.20 },
+  { a: 'EMS_SURV', b: 'EMS_DtD', rg: 0.88 },
 ];
 
-const TRAIT_ORDER: TraitCode[] = ['HBW', 'ADG', 'SURV', 'WSSV', 'AHPND', 'YIELD'];
+const TRAIT_ORDER: TraitCode[] = ['HBW', 'TagW', 'EMS_SURV', 'EMS_DtD', 'OP'];
 
 // Build a t × t additive genetic correlation matrix from the GCORR list,
 // fill missing entries with 0, set the diagonal to 1, and find its Cholesky
@@ -172,23 +167,28 @@ export function offspringTrueBV(
   return out;
 }
 
-// Sample a phenotype y = trait mean + g + e.
+// Population means at the start of selection. Genetic gain is applied on top
+// via the offspring BV draws over generations.
 const TRAIT_MEAN: Record<TraitCode, number> = {
-  HBW: 22,
-  ADG: 0.18,
-  SURV: 0.78,
-  WSSV: 0.45,
-  AHPND: 0.55,
-  FCR: 1.45,
-  YIELD: 50,
+  HBW: 22,           // g, sib harvest weight at Hawaii nucleus
+  TagW: 5.0,         // g, weight at PIT-tagging
+  EMS_SURV: 0.45,    // probability of surviving EMS challenge
+  EMS_DtD: 96,       // hours alive under challenge (challenge ends at 168h)
+  OP: 24,            // g, commercial-sentinel harvest weight
+  // Legacy entries (kept for type-completeness only — not produced any more).
+  ADG: 0,
+  SURV: 0,
+  WSSV: 0,
+  AHPND: 0,
+  FCR: 0,
+  YIELD: 0,
 };
 
 export function phenotypeFor(rng: Rng, trait: Trait, g: number): number {
   const e = gaussian(rng) * Math.sqrt(trait.residualVariance);
   let y = TRAIT_MEAN[trait.code] + g + e;
-  if (trait.code === 'SURV' || trait.code === 'WSSV' || trait.code === 'AHPND') {
-    y = Math.max(0, Math.min(1, y));
-  }
+  if (trait.code === 'EMS_SURV') y = Math.max(0, Math.min(1, y));
+  if (trait.code === 'EMS_DtD') y = Math.max(0, Math.min(168, y));
   return y;
 }
 
@@ -285,217 +285,10 @@ export function offspringGenotype(rng: Rng, panel: SnpPanel, sireG: Uint8Array, 
   return out;
 }
 
-// Drive a multi-generation run.
-export type SimResult = {
-  panel: SnpPanel;
-  animals: Animal[];
-  genotypes: Map<string, Uint8Array>;
-  phenotypes: Phenotype[];
-};
 
-export type SimConfig = {
-  seed: number;
-  lineId: string;
-  generations: number;            // including founders
-  foundersPerSex: number;
-  // Hatching / family layout: one family per hatching tank.
-  familiesPerGen: number;         // = number of hatching tanks
-  juvenilesPerFamily: number;     // PL → tagged juvenile yield per family
-  selectedAdultsRetained: number; // per non-final generation, broodstock kept
-  sexRatio: number;               // P(F) for offspring sex draw
-  panelDensity: number;
-  startDate: Date;
-  // Fraction of selected broodstock that get an official genotype call. (We
-  // always cache adult genotypes internally for Mendelian propagation.)
-  genotypeBroodstockFraction: number;
-  // Phenotyping rates against juveniles.
-  phenotypeFractionHBW: number;
-  phenotypeFractionDisease: number;
-};
-
-export function runSimulation(cfg: SimConfig): SimResult {
-  const rng = makeRng(cfg.seed);
-  const panel = makePanel(rng, cfg.panelDensity);
-  const { L } = geneticCholesky();
-  const animals: Animal[] = [];
-  const genotypes = new Map<string, Uint8Array>();
-  const phenotypes: Phenotype[] = [];
-
-  // Internal cache of every adult's genotype, used so offspring inherit
-  // properly from their parents even when we don't end up storing the parent's
-  // genotype in the official `genotypes` output.
-  const adultGenotypes = new Map<string, Uint8Array>();
-
-  // Founders.
-  const founders: Animal[] = [];
-  for (let s = 0; s < 2; s++) {
-    const sex: Sex = s === 0 ? 'M' : 'F';
-    for (let i = 0; i < cfg.foundersPerSex; i++) {
-      const id = `A${nextId()}`;
-      const bv = founderTrueBV(rng, L);
-      const a: Animal = {
-        id,
-        lineId: cfg.lineId,
-        sireId: null,
-        damId: null,
-        familyId: null,
-        sex,
-        birthDate: cfg.startDate.toISOString().slice(0, 10),
-        generation: 0,
-        tankId: `T-G0-${sex}`,
-        stage: 'broodstock',
-        spfStatus: 'SPF',
-        __trueBV: bv,
-        createdAt: cfg.startDate.toISOString(),
-      };
-      animals.push(a);
-      founders.push(a);
-      // Founders are adults — genotype every founder for Mendelian propagation
-      // (and store most of them officially as the training reference).
-      const fg = founderGenotype(rng, panel);
-      adultGenotypes.set(id, fg);
-      if (rng() < 0.9) genotypes.set(id, fg);
-    }
-  }
-
-  // Successive generations.
-  let parentPool = founders;
-  for (let g = 1; g < cfg.generations; g++) {
-    const isLatest = g === cfg.generations - 1;
-    const males = parentPool.filter((a) => a.sex === 'M');
-    const females = parentPool.filter((a) => a.sex === 'F');
-    if (males.length === 0 || females.length === 0) break;
-    const shuffledF = shuffle(rng, females);
-    const newGenAnimals: Animal[] = [];
-    // Per-juvenile family lookup so we can later draw the parent genotypes
-    // when (and only when) a juvenile is promoted to broodstock and gets
-    // officially genotyped. Avoids generating SNPs for the 27k that won't
-    // make the cut.
-    const sireOf = new Map<string, string>();
-    const damOf = new Map<string, string>();
-    const genDate = new Date(cfg.startDate.getTime() + g * 365 * 24 * 3600 * 1000);
-    for (let f = 0; f < cfg.familiesPerGen; f++) {
-      const sire = males[f % males.length];
-      const dam = shuffledF[f % shuffledF.length];
-      if (!sire.__trueBV || !dam.__trueBV) continue;
-      const familyId = `F-G${g}-${String(f + 1).padStart(3, '0')}`;
-      for (let k = 0; k < cfg.juvenilesPerFamily; k++) {
-        const id = `A${nextId()}`;
-        const sex: Sex = rng() < cfg.sexRatio ? 'F' : 'M';
-        const bv = offspringTrueBV(rng, L, sire.__trueBV, dam.__trueBV);
-        const a: Animal = {
-          id,
-          lineId: cfg.lineId,
-          sireId: sire.id,
-          damId: dam.id,
-          familyId,
-          sex,
-          birthDate: genDate.toISOString().slice(0, 10),
-          generation: g,
-          tankId: `T-G${g}-${familyId}`,
-          stage: 'juvenile',
-          spfStatus: 'SPF',
-          __trueBV: bv,
-          createdAt: genDate.toISOString(),
-        };
-        animals.push(a);
-        newGenAnimals.push(a);
-        sireOf.set(id, sire.id);
-        damOf.set(id, dam.id);
-      }
-    }
-    // Phenotype a sample at "harvest". HBW comes from a tagged subset; the
-    // disease-challenge traits come from a separate, smaller subset. The
-    // latest generation isn't grown out yet, so we phenotype a tiny fraction
-    // of partial-grow data only (representative of in-progress measurement).
-    const hbwFrac = isLatest ? Math.min(cfg.phenotypeFractionHBW, 0.05) : cfg.phenotypeFractionHBW;
-    const diseaseFrac = isLatest ? 0 : cfg.phenotypeFractionDisease;
-    for (const a of newGenAnimals) {
-      if (!a.__trueBV) continue;
-      // HBW + ADG + SURV + YIELD measured on the tagged subset.
-      if (rng() < hbwFrac) {
-        for (const code of ['HBW', 'ADG', 'SURV', 'YIELD'] as TraitCode[]) {
-          if (code === 'YIELD' && rng() > 0.5) continue;
-          const trait = TRAITS.find((t) => t.code === code)!;
-          const y = phenotypeFor(rng, trait, a.__trueBV[code]);
-          phenotypes.push({
-            id: `P-${a.id}-${code}`,
-            animalId: a.id,
-            trait: code,
-            value: y,
-            measuredAt: new Date(genDate.getTime() + 150 * 24 * 3600 * 1000).toISOString(),
-          });
-        }
-      }
-      // Disease challenges: independent, smaller sample.
-      if (rng() < diseaseFrac) {
-        for (const code of ['WSSV', 'AHPND'] as TraitCode[]) {
-          if (code === 'AHPND' && rng() > 0.6) continue;
-          const trait = TRAITS.find((t) => t.code === code)!;
-          const y = phenotypeFor(rng, trait, a.__trueBV[code]);
-          phenotypes.push({
-            id: `P-${a.id}-${code}`,
-            animalId: a.id,
-            trait: code,
-            value: y,
-            measuredAt: new Date(genDate.getTime() + 90 * 24 * 3600 * 1000).toISOString(),
-            context: { challengeId: `${code}-G${g}-${cfg.lineId}` },
-          });
-        }
-      }
-    }
-    if (isLatest) {
-      // Latest cohort stays as juveniles — they're currently being raised
-      // and not yet genotyped.
-      for (const a of newGenAnimals) a.stage = 'juvenile';
-      parentPool = [];
-    } else {
-      // Rank candidates by true BV (historical-record fiction; the live
-      // engine uses BLUP estimates).
-      const ranked = newGenAnimals
-        .filter((a) => a.__trueBV)
-        .map((a) => ({ a, score: indexFromTrueBV(a.__trueBV!) }))
-        .sort((x, y) => y.score - x.score);
-      const keep = Math.min(cfg.selectedAdultsRetained, ranked.length);
-      const chosen = new Set(ranked.slice(0, keep).map((r) => r.a.id));
-      for (const a of newGenAnimals) {
-        a.stage = chosen.has(a.id) ? 'broodstock' : 'harvested';
-      }
-      // Adults — and only adults — get a genotype now. Mendelian draw from
-      // the parents' stored adult genotypes.
-      for (const a of newGenAnimals) {
-        if (a.stage !== 'broodstock') continue;
-        const sId = sireOf.get(a.id);
-        const dId = damOf.get(a.id);
-        const sireG = (sId && adultGenotypes.get(sId)) || imputeFromFreq(rng, panel);
-        const damG = (dId && adultGenotypes.get(dId)) || imputeFromFreq(rng, panel);
-        const og = offspringGenotype(rng, panel, sireG, damG);
-        adultGenotypes.set(a.id, og);
-        // Persist a fraction officially as "genotyped on the chip".
-        if (rng() < cfg.genotypeBroodstockFraction) genotypes.set(a.id, og);
-      }
-      parentPool = ranked.slice(0, keep).map((r) => r.a);
-    }
-  }
-  // After all generations: demote retired broodstock from older generations
-  // to 'harvested' so the standing alive pool ≈ current juveniles + the
-  // selected parents of the current crop.
-  const G = cfg.generations;
-  for (const a of animals) {
-    if (a.stage === 'broodstock' && a.generation < G - 2) a.stage = 'harvested';
-  }
-  return { panel, animals, genotypes, phenotypes };
-}
-
-let _id = 1;
-function nextId(): string {
-  return String(_id++).padStart(5, '0');
-}
-export function resetIds(): void {
-  _id = 1;
-}
-
-function imputeFromFreq(rng: Rng, panel: SnpPanel): Uint8Array {
+// Mint a fresh genotype from population allele frequencies — used when a
+// parent's stored genotype is unavailable (e.g. founders not yet genotyped).
+export function imputeFromFreq(rng: Rng, panel: SnpPanel): Uint8Array {
   const g = new Uint8Array(panel.density);
   for (let j = 0; j < panel.density; j++) {
     const p = panel.alleleFreq[j];
@@ -507,9 +300,18 @@ function imputeFromFreq(rng: Rng, panel: SnpPanel): Uint8Array {
 }
 
 // Index from trait BVs using the static economic weights — used by the
-// simulator's historical "what would past breeders have selected" routine.
-function indexFromTrueBV(bv: Record<TraitCode, number>): number {
+// seeder to rank candidates when simulating "what past breeders would have
+// selected" so historical batches converge realistically.
+export function indexFromTrueBV(bv: Record<TraitCode, number>): number {
   let s = 0;
   for (const t of TRAITS) s += t.economicWeight * (bv[t.code] ?? 0);
   return s;
+}
+
+let _id = 1;
+export function nextId(): string {
+  return String(_id++).padStart(6, '0');
+}
+export function resetIds(): void {
+  _id = 1;
 }

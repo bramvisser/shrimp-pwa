@@ -1,14 +1,15 @@
 import Dexie, { type Table } from 'dexie';
 import type {
   Animal,
+  Batch,
   BreedingValue,
   BreedingValueRun,
   ChallengeTest,
   DecisionLog,
-  GameRound,
-  GameSession,
   GeneticCorrelation,
+  LifecycleEvent,
   Line,
+  Mating,
   MatingPlan,
   Phenotype,
   SelectionIndex,
@@ -108,8 +109,9 @@ class ShrimpDatabase extends Dexie {
   selectionIndices!: Table<SelectionIndex, string>;
   matingPlans!: Table<MatingPlan, string>;
   decisionLog!: Table<DecisionLog, string>;
-  gameSessions!: Table<GameSession, string>;
-  gameRounds!: Table<GameRound, string>;
+  batches!: Table<Batch, string>;
+  matings!: Table<Mating, string>;
+  lifecycleEvents!: Table<LifecycleEvent, string>;
 
   constructor() {
     super('ShrimpPWA');
@@ -174,6 +176,24 @@ class ShrimpDatabase extends Dexie {
       decisionLog: 'id, ts, kind, actor',
       gameSessions: 'id, status, startedAt',
       gameRounds: 'id, sessionId, generation, committedAt',
+    });
+    // v7: drop the breeding-game tables and the gameSessionId index on animals.
+    // Dexie deletes a table when the schema string is null.
+    this.version(7).stores({
+      animals: 'id, lineId, generation, sex, sireId, damId, familyId, stage, tankId',
+      gameSessions: null,
+      gameRounds: null,
+    });
+    // v8: introduce the batch-based pyramid model. New tables for Batches,
+    // Matings and LifecycleEvents; extra indexes on Animal for the new
+    // batch / pitTag / tier / programStatus / testSite fields.
+    this.version(8).stores({
+      animals:
+        'id, lineId, batchId, generation, sex, sireId, damId, familyId, stage, tankId, ' +
+        'pitTag, tier, programStatus, testSite',
+      batches: 'id, lineId, year, sequenceInYear, status, spawnDate',
+      matings: 'id, offspringBatchId, sireId, damId, status, plannedAt',
+      lifecycleEvents: 'id, animalId, kind, ts',
     });
   }
 }

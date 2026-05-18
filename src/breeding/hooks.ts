@@ -207,3 +207,66 @@ export function useProposeMatingPlan() {
 }
 
 export type { MatingPlan };
+
+// -------------------------------------------------------------------------
+// Batch / live-action hooks
+
+import type { Batch, ProgramStatus } from './types';
+import { selectCandidate, deselectCandidate, cullAnimal } from './service';
+
+// All batches, latest first by spawn date.
+export function useBatches(): Batch[] | undefined {
+  return useLiveQuery(async () => {
+    const all = await db.batches.toArray();
+    all.sort((a, b) => b.spawnDate.localeCompare(a.spawnDate));
+    return all;
+  }, []);
+}
+
+// Just the batches that have pending farm-floor decisions right now —
+// status='selection' (keepersort), 'mating' (broodstock pairing), or
+// 'spawning' (matings being executed). Used by the home-screen action board.
+export function useActiveBatches(): Batch[] | undefined {
+  return useLiveQuery(async () => {
+    const open: Batch['status'][] = ['selection', 'mating', 'spawning', 'family-tank'];
+    const rows = await db.batches.where('status').anyOf(open).toArray();
+    rows.sort((a, b) => a.spawnDate.localeCompare(b.spawnDate));
+    return rows;
+  }, []);
+}
+
+// Candidates from one batch (NP, programStatus = candidate or selected), with
+// the tagW phenotype joined in so the keepersort UI can show something useful
+// even before BLUP runs. Sorted by descending TagW as a placeholder index.
+export function useBatchCandidates(batchId: string | null) {
+  return useLiveQuery(async () => {
+    if (!batchId) return [];
+    const animals = await db.animals
+      .where('batchId').equals(batchId)
+      .filter((a) => a.tier === 'NP' && a.testSite === undefined)
+      .toArray();
+    const tagWPhenos = await db.phenotypes
+      .where('animalId').anyOf(animals.map((a) => a.id))
+      .filter((p) => p.trait === 'TagW')
+      .toArray();
+    const tagW = new Map(tagWPhenos.map((p) => [p.animalId, p.value]));
+    const rows = animals.map((a) => ({
+      animal: a,
+      tagW: tagW.get(a.id) ?? null,
+    }));
+    rows.sort((x, y) => (y.tagW ?? -Infinity) - (x.tagW ?? -Infinity));
+    return rows;
+  }, [batchId]);
+}
+
+export function useSelectAction() {
+  return useCallback(
+    async (animalId: string, actor: string, status: ProgramStatus) => {
+      if (status === 'selected') return selectCandidate(animalId, actor);
+      if (status === 'deselected') return deselectCandidate(animalId, actor);
+      if (status === 'culled') return cullAnimal(animalId, actor);
+      throw new Error(`unsupported transition: ${status}`);
+    },
+    [],
+  );
+}

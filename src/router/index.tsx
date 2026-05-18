@@ -19,7 +19,7 @@ import { GEBVScreen } from '../screens/breeding/GEBVScreen';
 import { SelectionScreen } from '../screens/breeding/SelectionScreen';
 import { GeneticProgressScreen } from '../screens/breeding/GeneticProgressScreen';
 import { ProgramScreen } from '../screens/breeding/ProgramScreen';
-import { GameScreen } from '../screens/breeding/GameScreen';
+import { KeepersortScreen } from '../screens/breeding/KeepersortScreen';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const name = localStorage.getItem('operator_name');
@@ -188,10 +188,10 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/breeding/game',
+    path: '/breeding/keepersort',
     element: (
       <AuthGuard>
-        <GameScreen />
+        <KeepersortScreen />
       </AuthGuard>
     ),
   },

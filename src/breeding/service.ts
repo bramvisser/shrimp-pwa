@@ -9,7 +9,9 @@ import { db, type GenotypeBlob } from '../db/database';
 import type {
   BreedingValue,
   BreedingValueRun,
+  LifecycleEvent,
   MatingPlan,
+  ProgramStatus,
   SnpEffects,
   SnpPanel,
   TraitCode,
@@ -662,3 +664,55 @@ export async function genotypeQC(panelId: string): Promise<{
 export { TRAITS } from './simulator';
 export { selectionIndex } from './math/selection';
 export { dosageRow };
+
+// -------------------------------------------------------------------------
+// Live tank actions. Every state change goes through `transition` so we get
+// a matching `lifecycleEvents` row for the audit trail and the animal is moved
+// out of candidate pools deterministically. Transitions are guarded so an
+// animal cannot be un-mated or un-culled.
+
+async function transition(
+  animalId: string,
+  to: ProgramStatus,
+  kind: LifecycleEvent['kind'],
+  actor: string,
+  patch: Partial<{
+    selectedAt: string;
+    deselectedAt: string;
+    culledAt: string;
+    matedAt: string;
+  }>,
+): Promise<void> {
+  const now = new Date().toISOString();
+  await db.transaction('rw', db.animals, db.lifecycleEvents, async () => {
+    const a = await db.animals.get(animalId);
+    if (!a) throw new Error(`animal ${animalId} not found`);
+    if (a.programStatus === to) return; // idempotent
+    if (a.programStatus === 'mated' || a.programStatus === 'culled') {
+      throw new Error(`cannot transition ${animalId} out of ${a.programStatus}`);
+    }
+    await db.animals.update(animalId, { programStatus: to, ...patch });
+    await db.lifecycleEvents.put({
+      id: `EV-${animalId}-${kind}-${Date.now()}`,
+      animalId,
+      ts: now,
+      kind,
+      actor,
+    });
+  });
+}
+
+export async function selectCandidate(animalId: string, actor: string): Promise<void> {
+  const now = new Date().toISOString();
+  await transition(animalId, 'selected', 'selected', actor, { selectedAt: now });
+}
+
+export async function deselectCandidate(animalId: string, actor: string): Promise<void> {
+  const now = new Date().toISOString();
+  await transition(animalId, 'deselected', 'deselected', actor, { deselectedAt: now });
+}
+
+export async function cullAnimal(animalId: string, actor: string): Promise<void> {
+  const now = new Date().toISOString();
+  await transition(animalId, 'culled', 'culled', actor, { culledAt: now });
+}

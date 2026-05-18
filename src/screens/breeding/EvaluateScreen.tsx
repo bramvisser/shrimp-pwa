@@ -7,10 +7,10 @@ import type { TraitCode } from '../../breeding/types';
 
 const TRAIT_CHOICES: { code: TraitCode; label: string }[] = [
   { code: 'HBW', label: 'Harvest body weight' },
-  { code: 'WSSV', label: 'WSSV survival' },
-  { code: 'AHPND', label: 'AHPND survival' },
-  { code: 'SURV', label: 'Survival to harvest' },
-  { code: 'YIELD', label: 'Meat yield' },
+  { code: 'TagW', label: 'Tagging weight' },
+  { code: 'EMS_SURV', label: 'EMS survival' },
+  { code: 'EMS_DtD', label: 'EMS survival time' },
+  { code: 'OP', label: 'Commercial harvest weight' },
 ];
 
 export function EvaluateScreen() {

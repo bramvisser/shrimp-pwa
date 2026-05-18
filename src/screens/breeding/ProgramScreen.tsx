@@ -5,7 +5,7 @@ import { db } from '../../db/database';
 import { TRAITS, GCORR } from '../../breeding/simulator';
 import type { TraitCode } from '../../breeding/types';
 
-const TRAIT_ORDER: TraitCode[] = ['HBW', 'ADG', 'SURV', 'WSSV', 'AHPND', 'YIELD'];
+const TRAIT_ORDER: TraitCode[] = ['HBW', 'TagW', 'EMS_SURV', 'EMS_DtD', 'OP'];
 
 export function ProgramScreen() {
   const lines = useLiveQuery(() => db.lines.toArray()) ?? [];
@@ -138,15 +138,15 @@ export function ProgramScreen() {
             </table>
           </div>
           <p className="mt-2 text-[11px] text-gray-500">
-            Antagonism between growth and disease resistance is the central tension of vannamei breeding —
-            r<sub>g</sub>(HBW, WSSV) ≈ −0.6 (Gitterle et al., 2005). Selection index economics determine
-            which side of the trade-off gets weight.
+            Antagonism between growth and EMS resistance is the central tension of vannamei breeding —
+            r<sub>g</sub>(HBW, EMS_SURV) ≈ −0.35. Selection-index economics decide
+            which side of the trade-off gets weight; the Speed line leans growth-first, Strength leans EMS-first.
           </p>
         </Section>
 
         <Section title="Population structure (configured)">
           <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-3">
-            <Stat label="Generations modelled" value="4 (G0 founders + 3 offspring)" />
+            <Stat label="Generations modelled" value="6 (G0 founders + 5 historic + current)" />
             <Stat label="Founders / line" value="120 (60 ♂ + 60 ♀)" />
             <Stat label="Hatching tanks / gen" value="80 (one family per tank)" />
             <Stat label="Juveniles / family" value="375" />

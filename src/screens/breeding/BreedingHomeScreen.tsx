@@ -5,15 +5,23 @@ import {
   ChartBarIcon,
   CpuChipIcon,
   DocumentTextIcon,
+  HandRaisedIcon,
   RectangleGroupIcon,
   SparklesIcon,
-  TrophyIcon,
 } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../../components/AppTopBar';
 import { ActionCard } from '../../components/ActionCard';
-import { useEnsureBreedingSeeded, useGenerationCounts, useGenotypeCount, useLines, useResetAndReseed } from '../../breeding/hooks';
+import {
+  useActiveBatches,
+  useEnsureBreedingSeeded,
+  useGenerationCounts,
+  useGenotypeCount,
+  useLines,
+  useResetAndReseed,
+} from '../../breeding/hooks';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
+import type { Batch } from '../../breeding/types';
 
 export function BreedingHomeScreen() {
   const navigate = useNavigate();
@@ -22,6 +30,7 @@ export function BreedingHomeScreen() {
   const genCounts = useGenerationCounts();
   const genoCount = useGenotypeCount();
   const { reseed, busy: reseeding, progress } = useResetAndReseed();
+  const activeBatches = useActiveBatches();
   const populationStats = useLiveQuery(async () => {
     const totals = await db.animals.count();
     const aliveByStage = await Promise.all(
@@ -30,6 +39,7 @@ export function BreedingHomeScreen() {
     const alive = aliveByStage.reduce((a, b) => a + b, 0);
     return { totals, alive };
   });
+  const pendingKeepersort = (activeBatches ?? []).filter((b) => b.status === 'selection').length;
   void ready;
   return (
     <div className="flex h-dvh flex-col bg-gray-50">
@@ -51,7 +61,7 @@ export function BreedingHomeScreen() {
           <button
             disabled={reseeding}
             onClick={async () => {
-              if (!confirm('Erase the current breeding population and re-seed at the configured scale (≈30k juveniles + 3k broodstock per line)? This takes ~30–60 seconds.')) return;
+              if (!confirm('Erase the current breeding population and re-seed the Speed + Strength program (5 historic years × 3 batches/year × 2 lines)?')) return;
               await reseed();
             }}
             className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 disabled:opacity-60"
@@ -59,6 +69,8 @@ export function BreedingHomeScreen() {
             {reseeding ? 'Reseeding…' : 'Reset & re-seed'}
           </button>
         </div>
+
+        <ActiveBatchesPanel batches={activeBatches} onOpenKeepersort={() => navigate('/breeding/keepersort')} />
         {reseeding && progress && (
           <div className="mb-2 rounded-md bg-amber-50 p-2 text-[11px] text-amber-800">{progress}</div>
         )}
@@ -94,6 +106,12 @@ export function BreedingHomeScreen() {
 
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Engine</h2>
         <div className="grid grid-cols-2 gap-3">
+          <ActionCard
+            icon={<HandRaisedIcon className="h-8 w-8" />}
+            title={pendingKeepersort > 0 ? `Keepersort · ${pendingKeepersort}` : 'Keepersort'}
+            subtitle="Live select / deselect"
+            onClick={() => navigate('/breeding/keepersort')}
+          />
           <ActionCard
             icon={<RectangleGroupIcon className="h-8 w-8" />}
             title="Pedigree"
@@ -136,14 +154,98 @@ export function BreedingHomeScreen() {
             subtitle="Lines, traits, audit log"
             onClick={() => navigate('/breeding/program')}
           />
-          <ActionCard
-            icon={<TrophyIcon className="h-8 w-8" />}
-            title="Breeding Game"
-            subtitle="You vs AI vs Oracle"
-            onClick={() => navigate('/breeding/game')}
-          />
         </div>
       </div>
     </div>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Active batches panel — shows live cohorts with their stage and the next
+// pending action. Clicking a 'selection' batch jumps straight to keepersort.
+
+function ActiveBatchesPanel({
+  batches,
+  onOpenKeepersort,
+}: {
+  batches: Batch[] | undefined;
+  onOpenKeepersort: () => void;
+}) {
+  if (!batches) return null;
+  if (batches.length === 0) {
+    return (
+      <div className="mb-4 rounded-xl bg-white p-3 text-xs text-gray-500 shadow-sm">
+        No active batches in the program right now.
+      </div>
+    );
+  }
+  return (
+    <div className="mb-4 rounded-xl bg-white p-3 shadow-sm">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Live batches
+        </h3>
+        <span className="text-[10px] text-gray-400">{batches.length} in progress</span>
+      </div>
+      <ul className="divide-y divide-gray-100">
+        {batches.map((b) => {
+          const next = nextActionFor(b);
+          const actionable = b.status === 'selection';
+          return (
+            <li key={b.id} className="flex items-center justify-between py-1.5 text-xs">
+              <div className="flex flex-1 items-center gap-2">
+                <span className="rounded bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] text-gray-700">
+                  {b.id}
+                </span>
+                <span className="text-gray-500">{b.lineId}</span>
+                <BatchStatusBadge status={b.status} />
+              </div>
+              <button
+                onClick={actionable ? onOpenKeepersort : undefined}
+                disabled={!actionable}
+                className={`rounded px-2 py-0.5 text-[11px] ${
+                  actionable
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    : 'cursor-default text-gray-400'
+                }`}
+              >
+                {next}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function nextActionFor(b: Batch): string {
+  switch (b.status) {
+    case 'selection': return 'Open keepersort';
+    case 'family-tank': return 'Growing';
+    case 'spawning': return 'Spawning now';
+    case 'mating': return 'Mating';
+    case 'tagged': return 'Awaiting EBVs';
+    case 'larval': return 'Larval culture';
+    case 'planned': return 'Planned';
+    case 'completed': return 'Completed';
+  }
+}
+
+function BatchStatusBadge({ status }: { status: Batch['status'] }) {
+  const cls: Record<Batch['status'], string> = {
+    planned: 'bg-gray-100 text-gray-600',
+    spawning: 'bg-blue-100 text-blue-700',
+    larval: 'bg-blue-50 text-blue-600',
+    'family-tank': 'bg-cyan-50 text-cyan-700',
+    tagged: 'bg-violet-50 text-violet-700',
+    selection: 'bg-indigo-100 text-indigo-700',
+    mating: 'bg-amber-50 text-amber-700',
+    completed: 'bg-gray-50 text-gray-500',
+  };
+  return (
+    <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${cls[status]}`}>
+      {status}
+    </span>
   );
 }

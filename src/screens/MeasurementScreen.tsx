@@ -16,10 +16,9 @@ export function MeasurementScreen() {
   const [farmId, setFarmId] = useState('');
   const [tankId, setTankId] = useState('');
   const [rfidTag, setRfidTag] = useState('');
-  const [barcode, setBarcode] = useState('');
   const [animalId, setAnimalId] = useState('');
   const [weightGrams, setWeightGrams] = useState('');
-  const [scannerTarget, setScannerTarget] = useState<'tankId' | 'barcode' | 'animalId' | null>(null);
+  const [scannerTarget, setScannerTarget] = useState<'tankId' | 'animalId' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<{ message: string; success: boolean } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,7 +51,6 @@ export function MeasurementScreen() {
         farmId: farmId.trim(),
         tankId: tankId.trim() || undefined,
         rfidTag: rfidTag.trim() || undefined,
-        barcode: barcode.trim() || undefined,
         animalId: animalId.trim() || undefined,
         weightGrams: parseFloat(weightGrams),
         operatorName: operatorName || '',
@@ -65,7 +63,6 @@ export function MeasurementScreen() {
 
       if (batchMode) {
         setRfidTag('');
-        setBarcode('');
         setAnimalId('');
         setWeightGrams('');
         setBatchCount((prev) => prev + 1);
@@ -142,8 +139,6 @@ export function MeasurementScreen() {
         <ScanField label={t('tankId')} value={tankId} onChange={setTankId} onScan={() => setScannerTarget('tankId')} />
         <Field label={t('rfidTag')} value={rfidTag} onChange={setRfidTag} />
 
-        <ScanField label={t('barcode')} value={barcode} onChange={setBarcode} onScan={() => setScannerTarget('barcode')} />
-
         <ScanField label={t('animalId')} value={animalId} onChange={setAnimalId} onScan={() => setScannerTarget('animalId')} />
 
         <div>
@@ -182,7 +177,6 @@ export function MeasurementScreen() {
         <BarcodeScannerModal
           onScan={(value) => {
             if (scannerTarget === 'tankId') setTankId(value);
-            else if (scannerTarget === 'barcode') setBarcode(value);
             else if (scannerTarget === 'animalId') setAnimalId(value);
             setScannerTarget(null);
           }}

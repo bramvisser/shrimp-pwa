@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
 import { useFarms } from '../hooks/useFarms';
 import { useSyncStatus } from '../sync/useSyncStatus';
@@ -10,12 +10,15 @@ import { syncAll, retryFailed } from '../sync/syncEngine';
 import { db } from '../db/database';
 import type { Measurement, Mortality } from '../db/database';
 import { exportMeasurementsCSV, exportMortalitiesCSV, downloadCSV } from '../utils/csvExport';
+import { resetAndReseedFarmDemoData } from '../utils/seedFarmDemoData';
 
 export function SyncStatusScreen() {
   const { t } = useTranslation();
   const farms = useFarms();
   const [farmFilter, setFarmFilter] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedStatus, setSeedStatus] = useState<string | null>(null);
   const isOnline = useOnlineStatus();
   const { pendingRecords, syncedRecords, failedRecords, pendingCount, syncedCount, failedCount } =
     useSyncStatus(farmFilter || undefined);
@@ -125,6 +128,31 @@ export function SyncStatusScreen() {
             <ArrowDownTrayIcon className="h-5 w-5" />
             Export Mortalities
           </button>
+          <button
+            disabled={seeding}
+            onClick={async () => {
+              if (!confirm('Wipe all local measurements and mortalities and replace them with 60 days of synthetic demo data?')) return;
+              setSeeding(true);
+              setSeedStatus(null);
+              try {
+                const r = await resetAndReseedFarmDemoData();
+                setSeedStatus(
+                  `${r.measurements.toLocaleString()} measurements · ${r.mortalities.toLocaleString()} mortalities across ${r.tanks} tanks (${r.farms} farms)`,
+                );
+              } catch (err) {
+                setSeedStatus(`Failed: ${(err as Error).message}`);
+              } finally {
+                setSeeding(false);
+              }
+            }}
+            className="flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+          >
+            <ArrowPathIcon className={`h-5 w-5 ${seeding ? 'animate-spin' : ''}`} />
+            {seeding ? 'Generating…' : 'Regenerate demo data'}
+          </button>
+          {seedStatus && (
+            <p className="text-center text-xs text-gray-600">{seedStatus}</p>
+          )}
         </div>
       </div>
     </div>

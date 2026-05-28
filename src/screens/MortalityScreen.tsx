@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
 import { BarcodeScannerModal } from '../components/BarcodeScannerModal';
+import { TankSelectField } from '../components/TankSelectField';
 import { db, type MortalityCause } from '../db/database';
 import { useOperator } from '../hooks/useOperator';
 import { useFarms } from '../hooks/useFarms';
@@ -138,7 +139,7 @@ export function MortalityScreen() {
           </select>
           {errors.farmId && <p className="mt-1 text-sm text-red-500">{errors.farmId}</p>}
         </div>
-        <ScanField label={t('tankId')} value={tankId} onChange={setTankId} onScan={() => setScannerTarget('tankId')} />
+        <TankSelectField label={t('tankId')} value={tankId} onChange={setTankId} onScan={() => setScannerTarget('tankId')} />
         <Field label={t('rfidTag')} value={rfidTag} onChange={setRfidTag} />
         <ScanField label={t('animalId')} value={animalId} onChange={setAnimalId} onScan={() => setScannerTarget('animalId')} />
 

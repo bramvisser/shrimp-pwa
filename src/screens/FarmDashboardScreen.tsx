@@ -118,13 +118,6 @@ export function FarmDashboardScreen() {
 
         {!isLoading && dataSource !== 'empty' && (
           <>
-            {/* KPI strip - business metrics */}
-            <KpiStrip
-              totalAnimals={summaryStats.totalAnimals}
-              averageWeight={summaryStats.averageWeight}
-              t={t}
-            />
-
             {/* Summary stat cards - 2x2 grid */}
             <div className="grid grid-cols-2 gap-3">
               <StatCard
@@ -197,13 +190,6 @@ export function FarmDashboardScreen() {
                 </ResponsiveContainer>
               </div>
             </div>
-
-            {/* 5-week production forecast */}
-            <ProductionForecastCard
-              totalAnimals={summaryStats.totalAnimals}
-              averageWeight={summaryStats.averageWeight}
-              t={t}
-            />
 
             {/* Mortality bar chart */}
             <div className="rounded-lg bg-white p-4 shadow">
@@ -286,148 +272,3 @@ function StatCard({
   );
 }
 
-// Constants for KPI projections (USD). Demo-only — would come from a pricing
-// service in production.
-const HARVEST_WEIGHT_G = 25;
-const PRICE_PER_KG = 8;
-const COST_PER_KG = 4.5;
-
-function formatCurrency(value: number): string {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
-  return `$${Math.round(value)}`;
-}
-
-function formatKg(value: number): string {
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}t`;
-  return `${Math.round(value)}kg`;
-}
-
-function KpiStrip({
-  totalAnimals,
-  averageWeight,
-  t,
-}: {
-  totalAnimals: number;
-  averageWeight: number;
-  t: (key: string) => string;
-}) {
-  const currentBiomassKg = (totalAnimals * averageWeight) / 1000;
-  const harvestBiomassKg = (totalAnimals * HARVEST_WEIGHT_G) / 1000;
-  const salesForecast = harvestBiomassKg * PRICE_PER_KG;
-  const costs = currentBiomassKg * COST_PER_KG;
-
-  return (
-    <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-      <KpiCard
-        label={t('kpiProduction')}
-        value={formatKg(currentBiomassKg)}
-        sublabel={t('kpiProductionSub')}
-        accent="emerald"
-      />
-      <KpiCard
-        label={t('kpiSalesForecast')}
-        value={formatCurrency(salesForecast)}
-        sublabel={t('kpiSalesForecastSub')}
-        accent="indigo"
-      />
-      <KpiCard
-        label={t('kpiCosts')}
-        value={formatCurrency(costs)}
-        sublabel={t('kpiCostsSub')}
-        accent="rose"
-      />
-    </div>
-  );
-}
-
-// Typical white-leg shrimp grow-out rate during the 10-25g window.
-const WEEKLY_GROWTH_RATE = 0.12;
-const FORECAST_WEEKS = 5;
-
-function ProductionForecastCard({
-  totalAnimals,
-  averageWeight,
-  t,
-}: {
-  totalAnimals: number;
-  averageWeight: number;
-  t: (key: string) => string;
-}) {
-  const data = Array.from({ length: FORECAST_WEEKS }, (_, i) => {
-    const week = i + 1;
-    const projectedWeight =
-      averageWeight * Math.pow(1 + WEEKLY_GROWTH_RATE, week);
-    const tonnes = (totalAnimals * projectedWeight) / 1_000_000;
-    return {
-      label: `+${week}w`,
-      tonnes: Math.round(tonnes * 100) / 100,
-    };
-  });
-
-  return (
-    <div className="rounded-lg bg-white p-4 shadow">
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-        {t('productionForecast')}
-      </h3>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={data}
-            margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="#9ca3af" />
-            <YAxis
-              tick={{ fontSize: 12 }}
-              stroke="#9ca3af"
-              unit="t"
-            />
-            <Tooltip
-              contentStyle={{
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb',
-                fontSize: '12px',
-              }}
-              formatter={(value) => [`${Number(value).toFixed(2)} t`, t('tonnage')]}
-            />
-            <Bar dataKey="tonnes" fill="#10b981" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <p className="mt-2 text-[11px] text-gray-500">
-        {t('forecastFootnote')}
-      </p>
-    </div>
-  );
-}
-
-function KpiCard({
-  label,
-  value,
-  sublabel,
-  accent,
-}: {
-  label: string;
-  value: string;
-  sublabel: string;
-  accent: 'emerald' | 'indigo' | 'rose';
-}) {
-  const accentMap = {
-    emerald: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
-    indigo: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
-    rose: 'bg-gradient-to-br from-rose-500 to-rose-600',
-  };
-
-  return (
-    <div
-      className={`min-w-[8.5rem] flex-1 rounded-lg p-3 text-white shadow ${accentMap[accent]}`}
-    >
-      <p className="text-[11px] font-medium uppercase tracking-wide opacity-80">
-        {label}
-      </p>
-      <p className="mt-1 text-2xl font-bold leading-tight">{value}</p>
-      <p className="mt-0.5 text-[10px] opacity-75">{sublabel}</p>
-    </div>
-  );
-}

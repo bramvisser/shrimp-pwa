@@ -7,6 +7,7 @@ import {
   ArrowPathIcon,
   ChartBarIcon,
   BellAlertIcon,
+  PresentationChartLineIcon,
 } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
 import { ActionCard } from '../components/ActionCard';
@@ -51,6 +52,12 @@ export function HomeScreen() {
             icon={<ChartBarIcon className="h-8 w-8" />}
             title={t('actionDashboard')}
             subtitle={t('actionDashboardSubtitle')}
+            onClick={() => navigate('/dashboard')}
+          />
+          <ActionCard
+            icon={<PresentationChartLineIcon className="h-8 w-8" />}
+            title={t('actionForecast')}
+            subtitle={t('actionForecastSubtitle')}
             onClick={() => navigate('/dashboard')}
           />
           <ActionCard

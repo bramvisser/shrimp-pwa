@@ -87,6 +87,8 @@
   "takePhoto": "Foto maken",
   "actionDashboard": "Dashboard",
   "actionDashboardSubtitle": "Boerderij-analyse",
+  "actionForecast": "Prognose",
+  "actionForecastSubtitle": "Productie 5 weken",
   "actionAlerts": "Meldingen",
   "actionAlertsSubtitle": "Besluitvormingsfeedback",
   "loadingFarms": "Boerderijen laden...",

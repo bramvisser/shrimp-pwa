@@ -87,6 +87,8 @@
   "takePhoto": "拍照",
   "actionDashboard": "数据面板",
   "actionDashboardSubtitle": "养殖场分析",
+  "actionForecast": "预测",
+  "actionForecastSubtitle": "5周产量",
   "actionAlerts": "警报",
   "actionAlertsSubtitle": "决策反馈",
   "loadingFarms": "加载养殖场...",

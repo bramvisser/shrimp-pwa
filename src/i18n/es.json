@@ -87,6 +87,8 @@
   "takePhoto": "Tomar foto",
   "actionDashboard": "Panel",
   "actionDashboardSubtitle": "Análisis de granja",
+  "actionForecast": "Pronóstico",
+  "actionForecastSubtitle": "Producción 5 semanas",
   "actionAlerts": "Alertas",
   "actionAlertsSubtitle": "Retroalimentación de decisiones",
   "loadingFarms": "Cargando granjas...",

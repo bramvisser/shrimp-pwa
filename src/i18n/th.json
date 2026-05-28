@@ -87,6 +87,8 @@
   "takePhoto": "ถ่ายรูป",
   "actionDashboard": "แดชบอร์ด",
   "actionDashboardSubtitle": "วิเคราะห์ฟาร์ม",
+  "actionForecast": "คาดการณ์",
+  "actionForecastSubtitle": "ผลผลิต 5 สัปดาห์",
   "actionAlerts": "การแจ้งเตือน",
   "actionAlertsSubtitle": "ข้อมูลการตัดสินใจ",
   "loadingFarms": "กำลังโหลดฟาร์ม...",

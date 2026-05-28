@@ -87,6 +87,8 @@
   "takePhoto": "Take Photo",
   "actionDashboard": "Dashboard",
   "actionDashboardSubtitle": "Farm analytics",
+  "actionForecast": "Forecast",
+  "actionForecastSubtitle": "5-week production",
   "actionAlerts": "Alerts",
   "actionAlertsSubtitle": "Decision feedback",
   "loadingFarms": "Loading farms...",

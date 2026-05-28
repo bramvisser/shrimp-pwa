@@ -389,7 +389,7 @@ function ProductionForecastCard({
                 border: '1px solid #e5e7eb',
                 fontSize: '12px',
               }}
-              formatter={(value: number) => [`${value.toFixed(2)} t`, t('tonnage')]}
+              formatter={(value) => [`${Number(value).toFixed(2)} t`, t('tonnage')]}
             />
             <Bar dataKey="tonnes" fill="#10b981" radius={[4, 4, 0, 0]} />
           </BarChart>

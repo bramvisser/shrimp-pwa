@@ -7,30 +7,20 @@ import {
   ArrowPathIcon,
   ChartBarIcon,
   BellAlertIcon,
+  BanknotesIcon,
+  ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline';
 import { AppTopBar } from '../components/AppTopBar';
 import { ActionCard } from '../components/ActionCard';
 import { AlertsBadge } from '../components/AlertsBadge';
-import { KpiStrip } from '../components/KpiStrip';
-import { ProductionForecastCard } from '../components/ProductionForecastCard';
 import { useOperator } from '../hooks/useOperator';
 import { useUnreadAlertCount } from '../hooks/useAlerts';
-import { useFarms } from '../hooks/useFarms';
-import { useDashboardData } from '../hooks/useDashboardData';
 
 export function HomeScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { name } = useOperator();
   const alertCount = useUnreadAlertCount();
-  const farms = useFarms();
-  const defaultFarmSlug = farms.length > 0 ? farms[0].slug : undefined;
-  const { summaryStats, isLoading, dataSource } = useDashboardData({
-    farmSlug: defaultFarmSlug,
-    dateRange: 'last12w',
-  });
-
-  const hasData = !isLoading && dataSource !== 'empty';
 
   return (
     <div className="flex h-dvh flex-col bg-gray-50">
@@ -41,19 +31,6 @@ export function HomeScreen() {
           <p className="text-sm opacity-80">{t('welcome')}</p>
           <p className="text-lg font-bold">{name}</p>
         </div>
-
-        {hasData && (
-          <div className="mb-4 space-y-3">
-            <KpiStrip
-              totalAnimals={summaryStats.totalAnimals}
-              averageWeight={summaryStats.averageWeight}
-            />
-            <ProductionForecastCard
-              totalAnimals={summaryStats.totalAnimals}
-              averageWeight={summaryStats.averageWeight}
-            />
-          </div>
-        )}
 
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
           {t('quickActions')}
@@ -77,6 +54,18 @@ export function HomeScreen() {
             title={t('actionDashboard')}
             subtitle={t('actionDashboardSubtitle')}
             onClick={() => navigate('/dashboard')}
+          />
+          <ActionCard
+            icon={<BanknotesIcon className="h-8 w-8" />}
+            title={t('actionProduction')}
+            subtitle={t('actionProductionSubtitle')}
+            onClick={() => navigate('/production')}
+          />
+          <ActionCard
+            icon={<ArrowTrendingUpIcon className="h-8 w-8" />}
+            title={t('actionForecast')}
+            subtitle={t('actionForecastSubtitle')}
+            onClick={() => navigate('/forecast')}
           />
           <ActionCard
             icon={

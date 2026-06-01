@@ -8,6 +8,8 @@ import { SyncStatusScreen } from '../screens/SyncStatusScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { DeviceConnectionScreen } from '../screens/DeviceConnectionScreen';
 import { FarmDashboardScreen } from '../screens/FarmDashboardScreen';
+import { ProductionScreen } from '../screens/ProductionScreen';
+import { ForecastScreen } from '../screens/ForecastScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
 import { ShareScreen } from '../screens/ShareScreen';
 import { CompareScreen } from '../screens/CompareScreen';
@@ -96,6 +98,22 @@ export const router = createBrowserRouter([
     element: (
       <AuthGuard>
         <FarmDashboardScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/production',
+    element: (
+      <AuthGuard>
+        <ProductionScreen />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/forecast',
+    element: (
+      <AuthGuard>
+        <ForecastScreen />
       </AuthGuard>
     ),
   },

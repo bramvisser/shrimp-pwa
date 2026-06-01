@@ -1,32 +1,27 @@
 import { useTranslation } from 'react-i18next';
-
-const HARVEST_WEIGHT_G = 25;
-const PRICE_PER_KG = 8;
-const COST_PER_KG = 4.5;
-
-function formatCurrency(value: number): string {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
-  return `$${Math.round(value)}`;
-}
-
-function formatKg(value: number): string {
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}t`;
-  return `${Math.round(value)}kg`;
-}
+import {
+  HARVEST_WEIGHT_G,
+  PRICE_PER_KG,
+  COST_PER_KG,
+  formatCurrency,
+  formatKg,
+} from '../utils/production';
 
 export function KpiStrip({
   totalAnimals,
   averageWeight,
+  showMargin = false,
 }: {
   totalAnimals: number;
   averageWeight: number;
+  showMargin?: boolean;
 }) {
   const { t } = useTranslation();
   const currentBiomassKg = (totalAnimals * averageWeight) / 1000;
   const harvestBiomassKg = (totalAnimals * HARVEST_WEIGHT_G) / 1000;
   const salesForecast = harvestBiomassKg * PRICE_PER_KG;
   const costs = currentBiomassKg * COST_PER_KG;
+  const margin = salesForecast - costs;
 
   return (
     <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
@@ -48,6 +43,14 @@ export function KpiStrip({
         sublabel={t('kpiCostsSub')}
         accent="rose"
       />
+      {showMargin && (
+        <KpiCard
+          label={t('kpiMargin')}
+          value={formatCurrency(margin)}
+          sublabel={t('kpiMarginSub')}
+          accent="amber"
+        />
+      )}
     </div>
   );
 }
@@ -61,12 +64,13 @@ function KpiCard({
   label: string;
   value: string;
   sublabel: string;
-  accent: 'emerald' | 'indigo' | 'rose';
+  accent: 'emerald' | 'indigo' | 'rose' | 'amber';
 }) {
   const accentMap = {
     emerald: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
     indigo: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
     rose: 'bg-gradient-to-br from-rose-500 to-rose-600',
+    amber: 'bg-gradient-to-br from-amber-500 to-amber-600',
   };
 
   return (
